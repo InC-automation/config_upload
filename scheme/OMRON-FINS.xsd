@@ -1,0 +1,60 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="OmronFinsRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="memory" type="xs:integer" use="required"/>
+        <xs:attribute name="addr" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="OmronFinsChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+       <xs:sequence>
+          <xs:element name="PollingPeriod" type="xs:integer"/>
+          <xs:element name="Timeout" type="xs:integer"/>
+          <xs:element name="GatewayCnt" type="xs:integer"/>
+          <xs:element name="DstNetwork" type="xs:integer"/>
+          <xs:element name="DstNode" type="xs:integer"/>
+          <xs:element name="DstUnit" type="xs:integer"/>
+          <xs:element name="SrcNetwork" type="xs:integer"/>
+          <xs:element name="SrcNode" type="xs:integer"/>
+          <xs:element name="SrcUnit" type="xs:integer"/>
+          <xs:element name="SetTimeStamp" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="EnableTrace" type="BoolInteger" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="OMRON_FINS">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="OmronFinsChannelSettings"/>
+
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="OmronFinsRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

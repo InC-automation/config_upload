@@ -1,0 +1,249 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <!-- Boolean type as integer  -->
+  <xs:simpleType name="BoolInteger">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <!-- Boolean type as string  -->
+  <xs:simpleType name="BoolString">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Signal data type  -->
+  <xs:simpleType name="SignalType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="BOOLEAN"/>
+      <xs:enumeration value="BITFIELD_2"/>
+      <xs:enumeration value="BITFIELD_13"/>
+      <xs:enumeration value="BITFIELD_32"/>
+      <xs:enumeration value="INT8"/>
+      <xs:enumeration value="INT8U"/>
+      <xs:enumeration value="INT16"/>
+      <xs:enumeration value="INT16U"/>
+      <xs:enumeration value="INT32"/>
+      <xs:enumeration value="INT32U"/>
+      <xs:enumeration value="INT64"/>
+      <xs:enumeration value="INT64U"/>
+      <xs:enumeration value="FLOAT32"/>
+      <xs:enumeration value="FLOAT64"/>
+      <xs:enumeration value="ENUMERATED"/>
+      <xs:enumeration value="CODED_ENUM"/>
+      <xs:enumeration value="OCTET_STRING_6"/>
+      <xs:enumeration value="OCTET_STRING_8"/>
+      <xs:enumeration value="OCTET_STRING_64"/>
+      <xs:enumeration value="VISIBLE_STRING_32"/>
+      <xs:enumeration value="VISIBLE_STRING_64"/>
+      <xs:enumeration value="VISIBLE_STRING_65"/>
+      <xs:enumeration value="VISIBLE_STRING_255"/>
+      <xs:enumeration value="UNICODE_STRING_255"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+    <!-- Time zone data type  -->
+  <xs:simpleType name="TimeZone">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="UTC"/>
+      <xs:enumeration value="Local"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Command service type  -->
+  <xs:simpleType name="CommandServiceType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SELECT"/>
+      <xs:enumeration value="SELECT_WITH_VAL"/>
+      <xs:enumeration value="OPERATE"/>
+      <xs:enumeration value="TIMED_OPERATE"/>
+      <xs:enumeration value="TERMINATION"/>
+      <xs:enumeration value="CANCEL"/>
+      <xs:enumeration value="ANY"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ControllerType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="BUFFERING"/>
+      <xs:enumeration value="NO_BUFFERING"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ProtocolType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="IEC61850"/>
+      <xs:enumeration value="IEC104"/>
+      <xs:enumeration value="OPCUA"/>
+      <xs:enumeration value="MODBUS_TCP"/>
+      <xs:enumeration value="MODBUS_RTU"/>
+      <xs:enumeration value="ELECONT"/>
+	    <xs:enumeration value="ETHERCAT"/>
+	    <xs:enumeration value="MQTT"/>
+	    <xs:enumeration value="DIAG"/>
+      <xs:enumeration value="GENERATOR"/>
+      <xs:enumeration value="OMRON_FINS"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Channel controller description -->
+  <xs:complexType name="ControllerDescription">
+    <xs:all minOccurs="0">
+      <xs:element name="TsQueueSize" type="xs:integer"/>
+      <xs:element name="TitQueueSize" type="xs:integer"/>
+    </xs:all>
+    <xs:attribute name="type" type="ControllerType" use="required"/>
+  </xs:complexType>
+  
+  <xs:complexType name="QualityConverterType">
+    <xs:attribute name="arg" type="xs:string" use="required"/>
+    <xs:attribute name="res" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- Quality converter list -->
+  <xs:complexType name="QualityConvList">
+    <xs:sequence>
+      <xs:element name="Conv" type="QualityConverterType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ChannelSettings">
+    <xs:sequence>
+      <xs:element name="Client" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Ip" type="xs:string" minOccurs="0"/>
+      <xs:element name="Port" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Quality" type="QualityConvList" minOccurs="0"/>
+      <xs:element name="DataTopicalityTime" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Gi" type="xs:integer" minOccurs="0"/>
+      <xs:element name="LogSignals" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="StopBySourceMissing" type="BoolInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <!-- Common channel object description -->
+  <xs:complexType name="ChannelObject">
+    <xs:attribute name="ref_id" type="xs:integer" use="required"/>
+  </xs:complexType>
+  
+  <!-- Common channel signal description -->
+  <xs:complexType name="ChannelSignal">
+    <xs:complexContent>
+      <xs:extension base="ChannelObject">
+        <xs:attribute name="invert" type="BoolString"/>
+        <xs:attribute name="coeff" type="xs:float"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <!-- Common receive signal description -->
+  <xs:complexType name="RxSignal">
+    <xs:complexContent>
+      <xs:extension base="ChannelSignal">
+        <xs:attribute name="min" type="xs:float"/>
+        <xs:attribute name="max" type="xs:float"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <!-- Common transmit signal description -->
+  <xs:complexType name="TxSignal">
+    <xs:complexContent>
+      <xs:extension base="ChannelSignal">
+        <xs:attribute name="src_id" type="xs:integer"/>
+        <xs:attribute name="ap" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <!-- Common channel command description -->
+  <xs:complexType name="ChannelCommand">
+    <xs:complexContent>
+      <xs:extension base="ChannelObject">
+        <xs:attribute name="timeout" type="xs:integer"/>
+        <xs:attribute name="complete" type="BoolString"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <!-- Common calculated signal description -->
+  <xs:complexType name="CalculatedSignal">
+    <xs:complexContent>
+      <xs:extension base="ChannelObject">
+        <xs:attribute name="action" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="BaseChannel">
+    <xs:sequence>
+      <!-- Controller -->
+      <xs:element name="Controller" type="ControllerDescription"/>
+	  
+      <!-- Calculated signals -->
+      <xs:element name="Calc" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Sig" type="CalculatedSignal" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+
+    <xs:attribute name="id" type="xs:integer" use="required"/>
+    <xs:attribute name="guid" type="xs:string"/>
+	<xs:attribute name="name" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- GRPC server settings  -->
+  <xs:simpleType name="GrpcTransportType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TCP"/>
+      <xs:enumeration value="UNIX_DOMAIN_SOCKET"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="GrpcServerSettings">
+    <xs:all>
+      <xs:element name="IpAddr" type="xs:string"/>
+      <xs:element name="Port" type="xs:integer"/>
+      <xs:element name="Transport" type="GrpcTransportType"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- Logger handler type (defines logging destination object)  -->
+  <xs:simpleType name="LoggerHandlerType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="rotate"/>
+      <xs:enumeration value="syslog"/>
+      <xs:enumeration value="file"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="LoggerType">
+    <xs:all>
+      <xs:element name="Type" type="LoggerHandlerType"/>
+      <xs:element name="Path" type="xs:string" minOccurs="0"/>
+      <xs:element name="SizeLimit" type="xs:integer" minOccurs="0"/>
+      <xs:element name="TimeLimit" type="xs:integer" minOccurs="0"/>
+	  <xs:element name="TotalSizeLimit" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Facility" type="xs:string" minOccurs="0"/>
+      <xs:element name="Severity" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  
+  <xs:complexType name="LoggerList">
+    <xs:sequence>
+      <xs:element name="Logger" type="LoggerType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

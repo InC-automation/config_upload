@@ -1,0 +1,80 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="ElecontChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+			<xs:element name="StreamPollingPeriod"  minOccurs="0"/>
+			<xs:element name="UserInterface"  minOccurs="0"/>
+			<xs:element name="WatchdogTimeout" type="xs:integer" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ElecontRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="userdata" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>  
+
+    <xs:complexType name="ElecontTxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="userdata" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ElecontCommand">
+    <xs:complexContent>
+      <xs:extension base="ChannelCommand">
+        <xs:attribute name="userdata" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>  
+
+  <xs:complexType name="ELECONT">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="ElecontChannelSettings"/>
+
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ElecontRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ElecontCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="xs:string" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals -->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ElecontTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ElecontCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="xs:string" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

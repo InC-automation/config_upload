@@ -1,0 +1,60 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="SnmpRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="oid" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="SnmpChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+       <xs:sequence>
+          <xs:element name="Version" type="xs:integer"/>
+          <xs:element name="Community" type="xs:string"/>
+          <xs:element name="ContextName" type="xs:string" minOccurs="0"/>
+          <xs:element name="MaxObjectsPerRequest" type="xs:integer"/>
+          <xs:element name="PollingPeriod" type="xs:integer"/>
+          <xs:element name="SetTimeStamp" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="User" type="xs:string"/>
+          <xs:element name="Password" type="xs:string"/>
+          <xs:element name="SecurityLevel" type="xs:integer"/>
+          <xs:element name="AuthProtocol" type="xs:integer"/>
+          <xs:element name="PrivProtocol" type="xs:integer"/>
+          <xs:element name="PrivPassword" type="xs:string"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="SNMP">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="SnmpChannelSettings"/>
+
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="SnmpRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

@@ -1,0 +1,212 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:simpleType name="CommonDataClass">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SPS"/>
+      <xs:enumeration value="DPS"/>
+      <xs:enumeration value="INS"/>
+      <xs:enumeration value="MV"/>
+      <xs:enumeration value="CMV"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="VectorItem">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="mag"/>
+      <xs:enumeration value="ang"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="Iec61850RxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="da" type="xs:string" use="required"/>
+        <xs:attribute name="do" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec61850TxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="cdc" type="CommonDataClass" use="required"/>
+        <xs:attribute name="do" type="xs:string" use="required"/>
+		<xs:attribute name="vi" type="VectorItem"/>
+		<xs:attribute name="ds" type="xs:string"/>
+		<xs:attribute name="desc" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Iec61850Command">
+    <xs:complexContent>
+      <xs:extension base="ChannelCommand">
+        <xs:attribute name="da" type="xs:string" use="required"/>
+        <xs:attribute name="do" type="xs:string" use="required"/>
+        <xs:attribute name="orcat" type="xs:integer"/>
+        <xs:attribute name="orident" type="xs:string"/>
+        <xs:attribute name="interlock" type="BoolString"/>
+        <xs:attribute name="synchro" type="BoolString"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:simpleType name="Iec61850AuthenticationMechanism">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NONE"/>
+      <xs:enumeration value="PASSWORD"/>
+	  <xs:enumeration value="CERTIFICATE"/>
+	  <xs:enumeration value="TLS"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:complexType name="Iec61850AuthenticationSettings">
+    <xs:all>
+      <xs:element name="Mechanism" type="Iec61850AuthenticationMechanism"/>
+      <xs:element name="Password" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec61850ChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+          <xs:element name="Ied" type="xs:string"/>
+          <xs:element name="PollingPeriod" type="xs:integer" minOccurs="0"/>
+		  <xs:element name="Authentication" type="Iec61850AuthenticationSettings" minOccurs="0"/>
+		  <xs:element name="TimeZone" type="TimeZone" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Iec61850TriggerOptions">
+    <xs:all>
+	  <xs:element name="DataChange" type="BoolInteger"/>								
+	  <xs:element name="QualityChange" type="BoolInteger"/>	  
+	  <xs:element name="DataUpdate" type="BoolInteger"/>									  
+	  <xs:element name="Integrity" type="BoolInteger"/>									  	  
+	  <xs:element name="IntegrityPeriod" type="xs:integer"/>									  	  	  
+	  <xs:element name="GeneralInterrogation" type="BoolInteger"/>									  	  	  	  
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="Iec61850ReportSettings">
+    <xs:all>
+      <xs:element name="RptName" type="xs:string"/>
+   	  <xs:element name="DsName" type="xs:string"/>							
+      <xs:element name="MaxInst" type="xs:integer"/>
+  	  <xs:element name="SequenceNumber" type="xs:integer"/>
+  	  <xs:element name="TimeOfEntry" type="xs:integer"/>
+   	  <xs:element name="ReasonForInclusion" type="xs:integer"/>
+   	  <xs:element name="DataSetName" type="xs:string"/>
+   	  <xs:element name="DataReference" type="xs:integer"/>
+   	  <xs:element name="BufferOverflow" type="xs:integer"/>
+      <xs:element name="EntryID" type="xs:integer"/>
+   	  <xs:element name="ConfigRevision" type="xs:integer"/>	  	  	  
+      <xs:element name="TriggerOptions" type="Iec61850TriggerOptions"/>
+    </xs:all>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec61850Report">
+    <xs:all>
+      <!-- Report settings -->
+      <xs:element name="Settings" type="Iec61850ReportSettings"/>
+
+      <!-- Rx report signals -->
+      <xs:element name="Rx" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Sig" type="Iec61850RxSignal" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+	  
+      <!-- Tx report signals -->
+      <xs:element name="Tx" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Sig" type="Iec61850TxSignal" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:all>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec61850DataSetAlias">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="IEC61850">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="Iec61850ChannelSettings"/>
+
+          <!-- Data sets -->
+          <xs:element name="DataSets" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="DsAlias" type="Iec61850DataSetAlias" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+		  
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="Iec61850RxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="Iec61850Command" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals -->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="Iec61850TxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="Iec61850Command" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Reports -->
+          <xs:element name="Reports">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Report" type="Iec61850Report" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+</xs:schema>
+
+
+
+
+
+
+
+
+
+
+

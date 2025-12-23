@@ -1,0 +1,106 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="ProfibusDPSlot">
+    <xs:sequence>
+      <xs:element name="Identifier" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="Params" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="DataFormatIn" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="DataLenIn" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="DataFormatOut" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="DataLenOut" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ProfibusDPDiag">
+    <xs:sequence>
+      <xs:element name="Desc" type="xs:string" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="GsdSection">
+    <xs:sequence>
+      <xs:element name="Identifier" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="UserPrmData" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="Slots" minOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Slot" type="ProfibusDPSlot" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="Diags" minOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Diag" type="ProfibusDPDiag" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ProfibusDPSlave">
+    <xs:sequence>
+      <xs:element name="Address" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="Name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="OutputSize" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="InputSize" type="xs:integer" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="Gsd" type="GsdSection" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ProfibusDPChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+       <xs:sequence>
+          <xs:element name="Address" type="xs:integer"/>
+          <xs:element name="CommPort" type="xs:string"/>
+          <xs:element name="BaudRate" type="xs:integer"/>
+          <xs:element name="PbDebugLevel" type="xs:integer"/>
+          <xs:element name="Type" type="xs:string"/>
+		  <xs:element name="Slave" type="ProfibusDPSlave" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ProfibusDPSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="addr" type="xs:string" use="required"/>
+        <xs:attribute name="slave" type="xs:integer"/>
+        <xs:attribute name="slot" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="PROFIBUS_DP">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="ProfibusDPChannelSettings"/>
+
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ProfibusDPSignal" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

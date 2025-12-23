@@ -1,0 +1,159 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="OPCUA.xsd"/>
+  <xs:include schemaLocation="IEC104.xsd"/>
+  <xs:include schemaLocation="MODBUS.xsd"/>
+  <xs:include schemaLocation="IEC61850.xsd"/>
+  <xs:include schemaLocation="ELECONT.xsd"/>
+  <xs:include schemaLocation="ETHERCAT.xsd"/>
+  <xs:include schemaLocation="MQTT.xsd"/>
+  <xs:include schemaLocation="DIAG.xsd"/>
+  <xs:include schemaLocation="OMRON-FINS.xsd"/>
+  <xs:include schemaLocation="SIGGENERATOR.xsd"/>
+  <xs:include schemaLocation="S7COMM.xsd"/>
+  <xs:include schemaLocation="SNMP.xsd"/>
+  <xs:include schemaLocation="PROFIBUS-DP.xsd"/>
+
+  <xs:complexType name="SignalDescription">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="id" type="xs:integer" use="required"/>
+        <xs:attribute name="type" type="SignalType" use="required"/>
+        <xs:attribute name="guid" type="xs:string"/>
+        <xs:attribute name="desc" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="CommandDescription">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="id" type="xs:integer" use="required"/>
+        <xs:attribute name="type" type="SignalType" use="required"/>
+        <xs:attribute name="service" type="CommandServiceType" use="required"/>
+        <xs:attribute name="guid" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- Logger source type -->
+  <xs:complexType name="LoggerSource">
+    <xs:all>
+      <xs:element name="Severity" type="xs:string"/>
+    </xs:all>
+    <xs:attribute name="name" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- Logger sources list -->
+  <xs:complexType name="LoggerSources">
+    <xs:sequence>
+      <xs:element name="Source" type="LoggerSource" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- CS configuration object -->
+  <xs:element name="Configuration">
+    <xs:complexType>
+      <xs:all>
+          
+        <xs:element name="CommunicationServer">
+          <xs:complexType>
+            <xs:all>
+              <!-- Channels list -->
+              <xs:element name="Channels">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Channel" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:all>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="ApiGateway">
+          <xs:complexType>
+            <xs:all>
+              <xs:element name="RpcServer" type="xs:string"/>
+            </xs:all>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="ServiceLogger">
+          <xs:complexType>
+            <xs:all>
+              <xs:element name="Logging" type="LoggerList"/>
+              <xs:element name="Settings">
+                <xs:complexType>
+                  <xs:sequence>
+                     <xs:element name="Sources" type="LoggerSources" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:all>
+          </xs:complexType>
+        </xs:element>
+		
+        <xs:element name="Archive" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="DataBase" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:all>
+                    <xs:element name="Enabled" type="BoolInteger" minOccurs="1"/>
+                    <xs:element name="Path" type="xs:string" minOccurs="1"/>
+                    <xs:element name="TimeLimit" type="xs:integer" minOccurs="1"/>
+                    <xs:element name="SizeLimit" type="xs:integer" minOccurs="1"/>
+                  </xs:all>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="ExternalDataBase" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:all>
+                    <xs:element name="Enabled" type="BoolInteger" minOccurs="1"/>
+                    <xs:element name="DatabaseType" type="xs:string" minOccurs="1"/>
+                    <xs:element name="IpAddr" type="xs:string" minOccurs="1"/>
+                    <xs:element name="Port" type="xs:integer" minOccurs="1"/>
+                    <xs:element name="DatabaseName" type="xs:string" minOccurs="1"/>
+                    <xs:element name="Login" type="xs:string" minOccurs="1"/>
+                    <xs:element name="Password" type="xs:string" minOccurs="1"/>
+                  </xs:all>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+		
+		<xs:element name="SignalSets" minOccurs="1"/>
+
+        <!-- Signal pool -->
+        <xs:element name="Signals">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Sig" type="SignalDescription" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <!-- Command pool -->
+        <xs:element name="Commands">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Cmd" type="CommandDescription" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:all>
+      <xs:attribute name="version" type="xs:string" />
+	  <xs:attribute name="datetime" type="xs:string" />
+	  <xs:attribute name="format" type="xs:string" />
+	  <xs:attribute name="cs_id" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

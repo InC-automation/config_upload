@@ -1,0 +1,215 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="OpcUaRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="ns" type="xs:integer" use="required"/>
+        <xs:attribute name="node_id" type="xs:string" use="required"/>
+        <xs:attribute name="id_type" type="xs:string" use="required"/>
+        <xs:attribute name="location" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaTxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="ns" type="xs:integer" use="required"/>
+        <xs:attribute name="node_id" type="xs:string" use="required"/>
+        <xs:attribute name="id_type" type="xs:string" use="required"/>
+        <xs:attribute name="location" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="OpcUaCommand">
+    <xs:complexContent>
+      <xs:extension base="ChannelCommand">
+        <xs:attribute name="ns" type="xs:integer" use="required"/>
+        <xs:attribute name="node_id" type="xs:string" use="required"/>
+        <xs:attribute name="id_type" type="xs:string" use="required"/>
+        <xs:attribute name="location" type="xs:string"/>
+        <xs:attribute name="ext" type="BoolString"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaAllSignals">
+    <xs:attribute name="ns" type="xs:integer" use="required"/>
+    <xs:attribute name="node_id" type="xs:string" use="required"/>
+    <xs:attribute name="id_type" type="xs:string" use="required"/>
+    <xs:attribute name="location" type="xs:string"/>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaSecurityPolicies">
+    <xs:sequence>
+      <xs:element name="Basic256" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Basic128Rsa15" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Basic256Sha256" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Aes128Sha256RsaOaep" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Aes256Sha256RsaPss" type="BoolInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>  
+
+  <xs:complexType name="OpcUaSecurityModes">
+    <xs:sequence>
+      <xs:element name="None" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Sign" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="SignEncrypt" type="BoolInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaAuthModes">
+    <xs:sequence>
+      <xs:element name="Anonymous" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Username" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Certificate" type="BoolInteger" minOccurs="0"/>
+      <xs:element name="Token" type="BoolInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="OpcUaUser">
+    <xs:sequence>
+      <xs:element name="Login" type="xs:string" minOccurs="0"/>
+      <xs:element name="Password" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaTrustedCert">
+    <xs:sequence>
+      <xs:element name="Content" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>  
+  
+  <xs:complexType name="OPCUASubscriptionSettings">
+    <xs:all>
+      <xs:element name="PublishInterval" type="xs:integer"/>
+      <xs:element name="SamplingInterval" type="xs:integer"/>
+      <xs:element name="QueueSize" type="xs:integer"/>
+    </xs:all>
+  </xs:complexType>  
+  
+  <xs:complexType name="OPCUASubscription">
+    <xs:all>
+      <!-- Report settings -->
+      <xs:element name="Settings" type="OPCUASubscriptionSettings"/>
+
+      <!-- Rx report signals -->
+      <xs:element name="Rx" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Sig" type="OpcUaRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+	  
+      <!-- Tx report signals -->
+      <xs:element name="Tx" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Sig" type="OpcUaTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:all>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+  
+  <xs:complexType name="OpcUaChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+          <xs:element name="ServerUrl" type="xs:string"/>
+          <xs:element name="Redundancy" type="xs:boolean" minOccurs="0"/>
+		  <xs:element name="RedundantUrl" type="xs:string"/>
+          <xs:element name="SecurityMode" type="xs:string" minOccurs="0"/>
+          <xs:element name="SecurityPolicy" type="xs:string" minOccurs="0"/>
+          <xs:element name="ApplicationUri" type="xs:string" minOccurs="0"/>
+          <xs:element name="UserTokenType" type="xs:string" minOccurs="0"/>
+          <xs:element name="UserName" type="xs:string" minOccurs="0"/>
+          <xs:element name="Password" type="xs:string" minOccurs="0"/>
+          <xs:element name="OwnCert" type="xs:string" minOccurs="0"/>
+          <xs:element name="PrivateKey" type="xs:string" minOccurs="0"/>
+          <xs:element name="UserCert" type="xs:string" minOccurs="0"/>
+          <xs:element name="UserPrivateKey" type="xs:string" minOccurs="0"/>
+          <xs:element name="OpenSSLStore" type="xs:string" minOccurs="0"/>
+          <xs:element name="UseDefSubscription" type="xs:boolean" minOccurs="0"/>
+		  <xs:element name="TimeZone" type="TimeZone" minOccurs="0"/>
+		  <xs:element name="CommandTimestamp" type="xs:boolean" minOccurs="0"/>
+		  
+		  <xs:element name="SecurityPolicies" type="OpcUaSecurityPolicies" minOccurs="0"/>
+		  <xs:element name="SecurityModes" type="OpcUaSecurityModes" minOccurs="0"/>
+	  <xs:element name="AuthModes" type="OpcUaAuthModes" minOccurs="0"/>
+          <xs:element name="Users" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="User" type="OpcUaUser" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="TrustedCerts" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Cert" type="OpcUaTrustedCert" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="OPCUA">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="OpcUaChannelSettings"/>
+
+          <!-- Rx signals & commands -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="OpcUaRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="OpcUaCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="OpcUaAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals & commands-->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="OpcUaTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="OpcUaCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="OpcUaAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          
+          <!-- Subscriptions -->
+          <xs:element name="Reports" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Report" type="OPCUASubscription" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>          
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

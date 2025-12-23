@@ -1,0 +1,73 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="EtherCatRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="slave" type="xs:integer" use="required"/>
+        <xs:attribute name="index" type="xs:integer" use="required"/>
+        <xs:attribute name="offset" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="EtherCatChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+          <xs:element name="PollingPeriod" type="xs:integer" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="EtherCatAllSignals">
+        <xs:attribute name="slave" type="xs:integer" use="required"/>
+        <xs:attribute name="index" type="xs:integer" use="required"/>
+        <xs:attribute name="offset" type="xs:integer"/>
+  </xs:complexType>
+  
+  <xs:complexType name="ETHERCAT">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="EtherCatChannelSettings"/>
+
+          <!-- Rx signals & commands -->
+          <xs:element name="Rx" minOccurs="0" maxOccurs="1">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="EtherCatRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="EtherCatAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals & commands-->
+          <xs:element name="Tx" minOccurs="0" maxOccurs="1">
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+</xs:schema>
+
+
+
+
+
+
+
+
+
+
+

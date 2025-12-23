@@ -1,0 +1,152 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="ModbusRxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="slave" type="xs:integer"/>
+        <xs:attribute name="func" type="xs:integer" use="required"/>
+        <xs:attribute name="addr" type="xs:string" use="required"/>
+        <xs:attribute name="byte_order" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="ModbusTxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="slave" type="xs:integer"/>
+        <xs:attribute name="func" type="xs:integer" use="required"/>
+        <xs:attribute name="addr" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ModbusCommand">
+    <xs:complexContent>
+      <xs:extension base="ChannelCommand">
+        <xs:attribute name="slave" type="xs:integer"/>
+        <xs:attribute name="func" type="xs:integer" use="required"/>
+        <xs:attribute name="addr" type="xs:string" use="required"/>
+        <xs:attribute name="c_addr" type="xs:string"/>
+        <xs:attribute name="byte_order" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ModbusChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+       <xs:sequence>
+          <xs:element name="ByteOrder" type="xs:string" minOccurs="0"/>
+          <xs:element name="Slave" type="xs:integer" minOccurs="0"/>
+          <xs:element name="PollingPeriod" type="xs:integer" minOccurs="0"/>
+          <xs:element name="CmdPollingPeriod" type="xs:integer" minOccurs="0"/>
+          <xs:element name="SetTimeStamp" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="EnableTrace" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="TransmitInvalidValues" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="ClientRequestsTimeout" type="xs:integer" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ModbusRtuChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ModbusChannelSettings">
+        <xs:sequence>
+          <xs:element name="CommPort" type="xs:string"/>
+          <xs:element name="BaudRate" type="xs:integer"/>
+          <xs:element name="DataBits" type="xs:integer"/>
+          <xs:element name="Parity" type="xs:string"/>
+          <xs:element name="StopBits" type="xs:integer"/>
+          <xs:element name="SlaveTimeout" type="xs:integer" minOccurs="0"/>
+          <xs:element name="RepeatCount" type="xs:integer" minOccurs="0"/>
+          <xs:element name="NextRequestDelay" type="xs:integer" minOccurs="0"/>
+          <xs:element name="NextSlaveDelay" type="xs:integer" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="ModbusAllSignals">
+    <xs:attribute name="slave" type="xs:integer"/>
+    <xs:attribute name="func" type="xs:integer" use="required"/>
+    <xs:attribute name="addr" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="MODBUS_TCP">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="ModbusChannelSettings"/>
+
+          <!-- Rx signals & commands -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ModbusRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ModbusCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="ModbusAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals & commands-->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ModbusTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ModbusCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="ModbusAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="MODBUS_RTU">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="ModbusRtuChannelSettings"/>
+
+          <!-- Rx signals & commands -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ModbusRxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ModbusCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="ModbusAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals & commands-->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="ModbusTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="ModbusCommand" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="ModbusAllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+</xs:schema>

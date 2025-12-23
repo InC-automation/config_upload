@@ -1,0 +1,114 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:simpleType name="MqttDataFormatKind">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="JSON"/>
+      <xs:enumeration value="STRING"/>
+      <xs:enumeration value="YANDEX"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:complexType name="MqttTxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="topic" type="xs:string" use="required"/>
+		<xs:attribute name="df" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:simpleType name="MqttAuthenticationMechanism">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NONE"/>
+      <xs:enumeration value="PASSWORD"/>
+	  <xs:enumeration value="TLS"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="MqttQoS">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+	  <xs:enumeration value="2"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="MqttRetain">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="MqttChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+		      <xs:element name="Version" type="xs:integer" minOccurs="0"/>
+          <xs:element name="DataFormat" type="xs:string"/>
+          <xs:element name="BrokerAddress" type="xs:string"/>
+		      <xs:element name="QoS" type="MqttQoS" minOccurs="0"/>
+		      <xs:element name="Retain" type="MqttRetain" minOccurs="0"/>
+          <xs:element name="Topic" type="xs:string" minOccurs="0"/>
+          <xs:element name="HighPerformanceMode" type="BoolInteger" minOccurs="0"/>
+          <xs:element name="Mechanism" type="MqttAuthenticationMechanism" minOccurs="0"/>
+          <xs:element name="Password" type="xs:string" minOccurs="0"/>
+          <xs:element name="User" type="xs:string" minOccurs="0"/>
+          <xs:element name="OwnCert" type="xs:string" minOccurs="0"/>
+          <xs:element name="PrivateKey" type="xs:string" minOccurs="0"/>
+          <xs:element name="TrustedCerts" type="xs:string" minOccurs="0"/>
+          <xs:element name="OpenSSLStore" type="xs:string" minOccurs="0"/>
+		  <xs:element name="TimeZone" type="TimeZone" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="MQTT">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="MqttChannelSettings"/>
+
+          <!-- Data sets -->
+          <xs:element name="DataFormat" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Kind" type="MqttDataFormatKind" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="NameKey" type="xs:string" minOccurs="0"/>
+				<xs:element name="ValueKey" type="xs:string" minOccurs="0"/>
+				<xs:element name="ValueTypeKey" type="xs:string" minOccurs="0"/>
+				<xs:element name="QualityKey" type="xs:string" minOccurs="0"/>
+				<xs:element name="TimestampKey" type="xs:string" minOccurs="0"/>
+              </xs:sequence>
+			  <xs:attribute name="name" type="xs:string" use="required"/>
+            </xs:complexType>
+          </xs:element>
+		  
+          <!-- Rx signals -->
+          <xs:element name="Rx" minOccurs="0">
+          </xs:element>
+
+          <!-- Tx signals -->
+          <xs:element name="Tx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="MqttTxSignal" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+</xs:schema>

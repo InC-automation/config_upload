@@ -1,0 +1,107 @@
+<xs:schema
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+  vc:minVersion="1.1">
+  
+  <xs:include schemaLocation="BasicTypes.xsd"/>
+
+  <xs:complexType name="Iec104RxSignal">
+    <xs:complexContent>
+      <xs:extension base="RxSignal">
+        <xs:attribute name="caa" type="xs:integer" use="required"/>
+        <xs:attribute name="ioa" type="xs:integer" use="required"/>
+        <xs:attribute name="asdu" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec104TxSignal">
+    <xs:complexContent>
+      <xs:extension base="TxSignal">
+        <xs:attribute name="caa" type="xs:integer" use="required"/>
+        <xs:attribute name="ioa" type="xs:integer" use="required"/>
+        <xs:attribute name="asdu" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Iec104Command">
+    <xs:complexContent>
+      <xs:extension base="ChannelCommand">
+        <xs:attribute name="caa" type="xs:integer" use="required"/>
+        <xs:attribute name="ioa" type="xs:integer" use="required"/>
+        <xs:attribute name="asdu" type="xs:integer"/>
+        <xs:attribute name="cq" type="xs:integer"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Iec104ChannelSettings">
+    <xs:complexContent>
+      <xs:extension base="ChannelSettings">
+        <xs:sequence>
+          <xs:element name="K" type="xs:integer" minOccurs="0"/>
+          <xs:element name="W" type="xs:integer" minOccurs="0"/>
+          <xs:element name="T0" type="xs:integer" minOccurs="0"/>
+          <xs:element name="T1" type="xs:integer" minOccurs="0"/>
+          <xs:element name="T2" type="xs:integer" minOccurs="0"/>
+          <xs:element name="T3" type="xs:integer" minOccurs="0"/>
+		  <xs:element name="TimeZone" type="TimeZone" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="Iec104AllSignals">
+    <xs:attribute name="caa" type="xs:string" use="required"/>
+    <xs:attribute name="ioa" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="IEC104">
+    <xs:complexContent>
+      <xs:extension base="BaseChannel">
+        <xs:sequence>
+          <!-- Channel settings -->
+          <xs:element name="Settings" type="Iec104ChannelSettings"/>
+
+          <!-- Rx signals & commands -->
+          <xs:element name="Rx" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="Iec104RxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="Iec104Command" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="Iec104AllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+          <!-- Tx signals & commands-->
+          <xs:element name="Tx" minOccurs="0" maxOccurs="1">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Sig" type="Iec104TxSignal" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Cmd" type="Iec104Command" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="AllSignals" type="Iec104AllSignals" minOccurs="0"/>            
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+</xs:schema>
+
+
+
+
+
+
+
+
+
+
+

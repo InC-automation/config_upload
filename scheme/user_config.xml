@@ -1,0 +1,1405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CsScheme.xsd" version="1.1" datetime="07.07.2021 09:49:53.630" format="1.44.0" cs_id="42">
+<!-- version="1.0" - версия содержания конфигурации, datetime - дата и время формирования файла, format - версия формата файла конфигурации,
+ cs_id - уникальный идентификатор экземпляра КС в рамках конкретного проекта-->
+	<CommunicationServer>
+		<Channels> <!--описание каналов на КС-->
+			<Channel id="1" name="NameOfTheRose" xsi:type="IEC104" guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB">
+			<!--id - внутренний порядковый номер канала внутри проекта
+			
+			xsi - префикс, используемый в xsd-схеме как ссылка на описание типа канала, ПОКА НЕ ИСПОЛЬЗУЕТСЯ В КОНФИГУРАТОРЕ И КС
+			
+			type - протокол, по которому на канале данные передаются, в данном случае это IEC104. 
+			
+			guid - уникальный идентификатор, заданный конфигуратором в проектной базе-->
+				
+				<Controller type="BUFFERING"> <!--режим буферизации сигналов. (В настоящий момент режимов только два: буферизация / нет буферизации)-->
+					<TsQueueSize>1000</TsQueueSize> <!--размер общего буфера изменившихся дискретных сигналов. Буферизация ТС происходит ПОСТОЯННО, независимо от наличия соединения.
+					Если очередь заполнилась, а изменения ТС продолжают поступать - самые старые данные перезаписываются новыми.-->
+					<TitQueueSize>25</TitQueueSize> <!--размер индивидуального буфера аналоговых сигналов. Буферизация ТИТ происходит только при отсутствии соединения.  
+					У каждого ТИТ есть своя собственная очередь, в которую ставятся поступающие изменения данного сигнала. При заполнении - новые значения перезаписывают старые.-->
+				</Controller>
+				
+				<Calc> <!-- расчетные сигналы, которые получаются путём преобразования значений других сигналов либо иным образом. НА ТЕКУЩИЙ МОМЕНТ НЕ РЕАЛИЗОВАНО. 
+				Только на КС в качестве расчетного сигнала сделана возможность привязывать к каналу дискретный сигнал-индикатор соединения: 1 - connect, 0 - disconnect.-->
+					<Sig ref_id="1001" action="connect" />
+				</Calc>
+				
+				<Settings> <!--общие и протокольно-зависимые настройки канала (те, что в Конфигураторе выше сигналов и команд)-->
+					<Client>0</Client> <!--режим работы, Client/Server-->
+					<Ip>0.0.0.0</Ip> <!--для сервера IP-адрес позволяет указать сетевой интерфейс на данной машине, с которого принимаются соединения; 0.0.0.0 - соединения принимаются с любого интерфейса-->
+					<Port>2405</Port> <!--TCP-порт, на котором сервер ожидает подключения клиентов. Может быть любым целым числом, кроме зарезервированных или занятых портов на ПК-->
+					<Quality>
+						<!--Настройки правил преобразования качества. Для каждого протокола заданы правила преобразования флагов качества по умолчанию, но их можно изменять.-->
+						<Conv arg="VALIDITY_QUESTIONABLE | DETAIL_OSCILLATORY" res="IV"/>
+						<!--Здесь прописываются правила преобразования флагов качества из внутренней модели КС в протокольно-зависимые. 
+									В теге <arg> задаётся исходное качество, в теге <res> - значение, в которое требуется преобразовать. СЕЙЧАС В КОНФИГУРАТОРЕ ЭТОГО НЕТ-->
+						<Conv arg="VALIDITY_QUESTIONABLE | DETAIL_INACCURATE" res="IV"/>
+					</Quality>
+					<DataTopicalityTime>10000</DataTopicalityTime> <!--Время актуальности данных, мс. Если по истечении этого времени сигнал не обновляется, ему выставляется признак качества "неактуальный"-->
+					<K>12</K> <!--максимальное число кадров с данными, которые могут быть переданы подряд без подтверждения получения. 
+							Если оно превышается, то передача кадров прекращается, пока не придет подтверждение получения первого отправленного кадра -->
+					<W>8</W> <!--максимальное число кадров с данными, которые могут быть приняты без передачи подтверждения. 
+					Когда это число достигается, принимающая сторона обязана отправлять подтверждение получения на кадры, принятые в правильной последовательности  -->
+					<T0>30</T0> <!--Таймаут при установлении соединения, с -->
+					<T1>15</T1> <!--Таймаут при посылке или тестировании APDU, с -->
+					<T2>10</T2> <!--Таймаут для подтверждения в случае отсутствия сообщения с данными, с -->
+					<T3>20</T3> <!--Таймаут для посылки блоков тестирования в случае долгого простоя, с -->
+					<TimeZone>Local</TimeZone>
+				</Settings>
+				
+				<Rx> <!--Описание принимаемых на данном канале объектов (сигналов / команд). 
+				
+				ref_id - ссылка на идентификатор объекта, описанного в общей для всей конфигурации секции (Signals - для сигналов, Commands - для команд).
+				Принимаемое из канала значение будет записываться в указанный объект.
+				
+				caa - общий адрес ASDU, специфичный параметр протокола IEC104
+				
+				ioa - адрес объекта, специфичный параметр протокола IEC104
+				
+				cq - (command qualifier) параметр команды "Тип воздействия", специфичный для протокола IEC104, используется только с командами дискретных типов (BOOLEAN и BITFIELD_2). 
+				Определено четыре возможных значения:
+					- 0 - "не определено"
+					- 1 - "короткий импульс"
+					- 2 - "длинный импульс"
+					- 3 - "принудительный выход" -->
+					
+					<Cmd ref_id="1" caa="2" ioa="1" cq="2"/> 
+					
+					<Cmd ref_id="2" caa="2" ioa="2"/>
+					<Cmd ref_id="3" caa="2" ioa="3" asdu="47"/> 
+					<Cmd ref_id="4" caa="2" ioa="4" asdu="48"/>
+					<Cmd ref_id="5" caa="2" ioa="5"/>
+					<Cmd ref_id="6" caa="2" ioa="6"/>
+					
+					<Cmd ref_id="7" caa="5" ioa="1"/>
+					<Cmd ref_id="8" caa="5" ioa="2" cq="3"/>
+					<Cmd ref_id="9" caa="5" ioa="3" asdu="47"/>
+					<Cmd ref_id="10" caa="5" ioa="4" asdu="48"/>
+					<Cmd ref_id="11" caa="5" ioa="5"/>
+					<Cmd ref_id="12" caa="5" ioa="6"/>
+					
+					<Cmd ref_id="13" caa="6" ioa="1" cq="0"/>
+					<Cmd ref_id="14" caa="6" ioa="2"/>
+					<Cmd ref_id="15" caa="6" ioa="3" asdu="47"/>
+					
+					<Cmd ref_id="16" caa="7" ioa="1" asdu="48"/>
+					<Cmd ref_id="17" caa="7" ioa="2"/>
+					<Cmd ref_id="18" caa="7" ioa="3"/>
+					
+					<Cmd ref_id="19" caa="3" ioa="1"/>
+					<Cmd ref_id="20" caa="3" ioa="2"/>
+					
+					<Cmd ref_id="21" caa="8" ioa="1"/>
+					<Cmd ref_id="22" caa="8" ioa="2"/>
+				</Rx>
+				<Tx> <!--Описание передаваемых на данном канале объектов (сигналов / команд).-->
+					<Sig ref_id="2" src_id="17" caa="1" ioa="1" invert="1"/>
+					<!--
+					ref_id - ссылка на объект сигнала / команды, значение которого передаётся в канал
+					
+					src_id [только для сигналов] - ссылка на объект сигнала, из которого берётся исходное значение для передаваемого сигнала. На это значение накладывается масштабирование, инвертирование,
+					нормализация, коэффициент и т. д., если они настроены. Для одного и того же принимаемого (исходного) сигнала может быть описано несколько ретранслируемых сигналов.
+					Данный атрибут может также ОТСУТСТВОВАТЬ - в этом случае выполняется ретрансляция текущего значения сигнала, на который ссылается ref_id.
+					
+					caa - (common adress ASDU), общий адрес ASDU
+					
+					ioa - адрес сигнала на устройстве (можно найти в спецификации или конфигураторе устройства)
+					
+					invert - признак инвертирования (для дискретных сигналов)
+					
+					coeff - коэффициент масштабирования (для аналоговых сигналов)
+					
+					asdu - тип кадра протокола IEC104. Указывается, если по внутреннему типу сигнала / команды невозможно однозначно установить соответствие типу кадра.
+					
+					ap - апертура в %, для аналоговых сигналов
+					-->
+					<Sig ref_id="4" src_id="29" caa="1" ioa="2" invert="0"/>
+					<Sig ref_id="6" src_id="19" caa="1" ioa="3" coeff="2"/>
+					<Sig ref_id="8" src_id="27" caa="1" ioa="4" coeff="1.3" ap="10"/>
+					<Sig ref_id="10" src_id="9" caa="1" ioa="5" asdu="9" ap="20"/>
+					<Sig ref_id="12" src_id="37" caa="1" ioa="6"/>
+					<Sig ref_id="14" src_id="13" caa="1" ioa="7" asdu="5"/>
+					<Sig ref_id="16" src_id="15" caa="1" ioa="7" asdu="5"/>
+					<Sig ref_id="54" src_id="53" caa="1" ioa="8"/>
+					<Sig ref_id="56" src_id="55" caa="1" ioa="9"/>
+					<Sig ref_id="58" src_id="57" caa="1" ioa="10"/>
+					<Sig ref_id="60" src_id="59" caa="1" ioa="11"/>
+					<Sig ref_id="62" src_id="61" caa="1" ioa="12"/>
+					<Sig ref_id="64" src_id="63" caa="1" ioa="13"/>
+					<Sig ref_id="66" src_id="65" caa="1" ioa="14"/>
+					<Sig ref_id="68" src_id="67" caa="1" ioa="15"/>
+				</Tx>
+				
+			</Channel>
+			
+			<Channel id="2" xsi:type="IEC104" guid="ffffffff-ffff-ffff-ffff-ffffffffffff">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>1</Client>
+					<Ip>127.0.0.1</Ip> <!-- IP-адрес сервера, с которым устанавливается соединение. Общий параметр для всех протоколов, использующих TCP/IP.-->
+					<Port>2404</Port> <!-- TCP-порт, на котором сервер принимает входящие соединения. Общий параметр для всех протоколов, использующих TCP/IP.-->
+					<Quality>
+						<Conv arg="LOST_CALIBRATION" res="INVALID" />
+						<Conv arg="OSCILLATORY" res="INVALID" />
+					</Quality>
+					<Gi>180</Gi> <!--"General interrogation", общий опрос.
+							В данном параметре задаётся период общего опроса (мс) - если мы хотим, чтобы он выполнялся регулярно, через определённое время. -->
+					<LogSignals>0</LogSignals> <!-- Данный параметр включает расширенное логирование принимаемых сигналов.
+							НА ТЕКУЩИЙ МОМЕНТ НЕ ФОРМИРУЕТСЯ КОНФИГУРАТОРОМ, А ВНОСИТСЯ ВРУЧНУЮ ДЛЯ ИССЛЕДОВАНИЯ ОШИБОК. 
+							В нормальном режиме, как правило, в лог (о каналах) заносятся:
+							- сообщения об ошибках
+							- сообщения об установлении/закрытии соединения по каналу
+							- передача команд
+							Расширенный режим предполагается для получения большего количества сведений для исследования ошибок, кроме вышеописанных.-->
+					<K>256</K>
+					<T0>5</T0>
+					<TimeZone>UTC</TimeZone>
+				</Settings>
+				<Rx>
+					<Sig ref_id="1" caa="1" ioa="1"/>
+					<Sig ref_id="3" caa="1" ioa="2"/>
+					<Sig ref_id="5" caa="1" ioa="3" min="-2000" max="3000"/>
+					<!--min - задание минимально допустимого значения аналогового сигнала
+						max - задание максимально допустимого значения аналогового сигнала. 
+						Если значение сигнала выходит за указанные пределы, сигналу выставляется признак качества "ПЕРЕПОЛНЕНИЕ"-->
+					<Sig ref_id="7" caa="1" ioa="4" min="-102.4" max="600.0"/>
+					<Sig ref_id="9" caa="1" ioa="5"/>
+					<Sig ref_id="11" caa="1" ioa="6" min="0" max="12238"/>
+					<Sig ref_id="13" caa="1" ioa="7"/>
+					<Sig ref_id="15" caa="1" ioa="8"/>
+				</Rx>
+				<Tx>
+					<Cmd ref_id="1" caa="2" ioa="1"></Cmd>
+					<Cmd ref_id="2" caa="2" ioa="2" cq="1"></Cmd>
+					<Cmd ref_id="3" caa="2" ioa="3" asdu="47" timeout="10000" complete="1"></Cmd>
+					<!--timeout - время, в течение которого КС ожидает подтверждение получения отправленной команды от исполняющего устройства. Если подтверждение не было получено,
+					источнику команды отправляется сообщение об ошибке. Параметр может быть не задан, либо установлен в ноль - тогда подтверждение не отслеживается.
+					Параметр относится как к командам с предварительным выбором, так и без него. 
+					complete - признак отслеживания завершения выполнения команды. Если стоит 1, то timeout включает не только подтверждение получения, но и подтверждение выполнения.
+					Если стоит 0, то (при установленном timeout) отслеживается только подтверждение получения команды.-->
+					<Cmd ref_id="4" caa="2" ioa="4" asdu="48" timeout="3000"></Cmd>
+					<Cmd ref_id="5" caa="2" ioa="5"></Cmd>
+					<Cmd ref_id="6" caa="2" ioa="6" timeout="10000" complete="1"></Cmd>
+				</Tx>
+			</Channel>
+
+			<Channel id="3" xsi:type="OPCUA" guid="e8b7c9bf-9946-44a7-ac03-b1989564fd73">
+				<Controller type="NO_BUFFERING"/>
+				<Settings>
+					<Client>1</Client>
+					<Quality>
+						<Conv arg="BadOutOfService" res="VALIDITY_QUESTIONABLE | DETAIL_BAD_REFERENCE" />
+					</Quality>
+          <DataTopicalityTime>15000</DataTopicalityTime> <!--Время актуальности данных-->
+          <ServerUrl>opc.tcp://512-486370.inc.elara.local:53530/OPCUA/SimulationServer</ServerUrl> <!--адрес сервера OPC UA-->
+		  <Redundancy>1</Redundancy>
+		  <RedundantUrl>opc.tcp://512-486370.inc.elara.local:53530/OPCUA/SimulationServer</RedundantUrl>
+          <SecurityMode>None</SecurityMode> <!--режим безопасности-->
+          <SecurityPolicy>http://opcfoundation.org/UA/SecurityPolicy#None</SecurityPolicy> <!--политика безопасности-->
+          <ApplicationUri>urn:alekseev-as:UnifiedAutomation::Client_Cpp_SDK</ApplicationUri> <!--универсальный идентификатор приложения-->
+          <UserTokenType>Anonymous</UserTokenType> <!--тип аутентификации-->
+          <UserName>john</UserName> <!--имя пользователя-->
+          <Password>master</Password> <!--пароль-->
+          <OwnCert>-----BEGIN CERTIFICATE----- <!--клиентский (канальный) сертификат-->
+MIIGczCCBVugAwIBAgIEYQFzvDANBgkqhkiG9w0BAQsFADCB8DEaMBgGCgmSJomT
+8ixkARkWCjUxMi00ODY0MDMxCzAJBgNVBAYTAlJVMRUwEwYDVQQIDAzQnNC+0YHQ
+utCy0LAxMDAuBgNVBAcMJ9Cg0L7RgdGB0LjQudGB0LrQsNGPINGE0LXQtNC10YDQ
+sNGG0LjRjzEaMBgGA1UECgwR0JDQniAi0K3Qm9CQ0KDQkCIxKDAmBgNVBAsMH9CY
+0L3QttC10L3QtdGA0L3Ri9C5INGG0LXQvdGC0YAxNjA0BgNVBAMMLdCa0L7QvNC8
+0YPQvdC40LrQsNGG0LjQvtC90L3Ri9C5INGB0LXRgNCy0LXRgDAeFw0yMTA3Mjgx
+NTExNTZaFw0yNjA3MjcxNTExNTZaMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4
+NjQwMzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UE
+Bwwn0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYD
+VQQKDBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQ
+vdGL0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQ
+uNC+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwhiUiN
+JRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVuQFWE
+YRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsUeZIu
+CjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+nVuZ
+ypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X4RMp
+XQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABo4ICETCCAg0wDAYDVR0TAQH/
+BAIwADBQBglghkgBhvhCAQ0EQxZBIkdlbmVyYXRlZCB3aXRoIFVuaWZpZWQgQXV0
+b21hdGlvbiBVQSBCYXNlIExpYnJhcnkgdXNpbmcgT3BlblNTTCIwHQYDVR0OBBYE
+FKKLT4PiwQyRrUTaCBxXb5+6V76QMIIBIgYDVR0jBIIBGTCCARWAFKKLT4PiwQyR
+rUTaCBxXb5+6V76QoYH2pIHzMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4NjQw
+MzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UEBwwn
+0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYDVQQK
+DBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQvdGL
+0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQuNC+
+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAggRhAXO8MA4GA1UdDwEB/wQEAwIC9DAgBgNV
+HSUBAf8EFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwNAYDVR0RBC0wK4YddXJuOjUx
+Mi00ODY0MDM6RWxhcmE6VWFTZXJ2ZXKCCjUxMi00ODY0MDMwDQYJKoZIhvcNAQEL
+BQADggEBAIbP6xQARlNd4lqXpnuOXAjATrTydd9hDuJTyTsawADechjlOfIkW4yM
+IKP/SxEgCsv10d+k/y7ut/Jw4IjTzNG5Q69hWyKBir8S+ikEH20hlNflmVOKzt8B
+1lJJEEckr2UdyxSseWQ44hVycbEw43bMJ0Cd9VP28ncWeFKLAUNMQOZLf+RIPC3t
+Gz03gsT1zfcZy+oaCCeR6ENuW825ZE1vXLgP4jIWYG1KCGuQpHbufqCSulLPdqcl
+THXZckRVlTLY19elEV5+MvfTGIo8Fj1pWJWj9MeCyFB/aCqHbvPzC8V4Do7AAPFz
+SsSVq884c7H7MA3jagLcA0UU6jXTJhA=
+-----END CERTIFICATE-----
+                    </OwnCert>
+                    <PrivateKey>-----BEGIN RSA PRIVATE KEY----- <!-- закрытый ключ к клиентскому (канальному) сертификату -->
+MIIEpAIBAAKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwh
+iUiNJRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVu
+QFWEYRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsU
+eZIuCjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+
+nVuZypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X
+4RMpXQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABAoIBAEZUrFmYsZvW6xPB
+UOY1gRyDoh71+F79RIR4tPg08kGdxWFz6f1X0q0mvUIBZweQMQwoMuThzgXX+eld
+zfxLLTnUj88jlIZS2drmPn5+NMi7wokqBoN+WBMPB7oDiI5Sfrwj7dnMqh9dnbNK
+EXUVUjnObzZUf1B+fyY2jPjP5JpXUQ2CYNtyPvbrPpSQRDjY0XJs9oYUmMmJS2Mc
+EsR2yBjRJRxAfx7u/qY8fHr/OvvX2Pfi5hrZ2iEsY0ezq3GPju5BtfDMhHe9ZI6S
+CUL2JtyCj3TqVdypLP2WzJzielYUv29aWGRG8adXtaKbDeM8ftTEEmtMCPbVQEgL
+N10zd0ECgYEA52yqQSHFT5JL37opFh3RE8Y5H7Zoplc5akD0h1xLTNhP7lZGe974
+vO8Id9/xwF6353LgSal18I0/I39yY3Kep37RRgRCTkdm7QlW2G4HdWG5Hr6RETOa
+bMdE1cb2PQBAU8F9z/hu4Ve/BYPkueG4vVcGWiPUdZaETfPOzvYyd/ECgYEAwaW7
+rW0LISe2Y2YbK78JLYpWpU7nq1F7kPhEEFsMJwWvFwXpRnpUI4M27i1NYADICH7R
+cJgxS2e69xKHPVVft+qWyAqV370A//d9zrl1ZqDmlapvL9Y8Bj0mfo3/zuGqvDUB
+0i39p00DXfgZL7WpyAL/mTsig3R3S+JW0CnhHJ8CgYEAr4ombnceQmg280IzDhqZ
+z8UI6XwkTyBUZbtVgCNK3sQphSCeIDGWPUGXC86rgn6WQpJJfLZ0xn1tShDPBI4Z
+t/Ui6lgqr1PLx7rQzCRRtgDlOWPVh9W7qg1QslNTzhuVr7JSK2FHQdicBaPw5+pG
+hiAvqkoJSxRb0QFBeo0W5RECgYEAuVs1YNRugcbsewqCWYZbd57iPwtfD4pIN8Sc
+CffMkxGKvgPnfZGcNf3kN2lfldRJpHAXc6oKDT52JQc0Mk4k9/txZntTaD0W1uwE
+HTtCGAFNldb05JoxDFu+HAc548H4Vnx6iL+C+3/pCCpxmUxO/md4VyjWaXOyuQ0m
+wcxEcMsCgYA5avzT47cdeCSk1yM974Z7hBj6ZdCTFbGE+dsGKLS9GrXCLtb/TObt
+QMuhL5zCgyjYxxst3lIJ6jH5+0kohcmAXsCa30fdGbXm8+IPYaSqIiFHhKeLjNBI
+NR2JNaWGdLwvSHvirEgk/TYGoLeCp9prFdyYQTU0qHL3ogNnUaq0/A==
+-----END RSA PRIVATE KEY-----
+                    </PrivateKey>
+                    <UserCert> <!--пользовательский сертификат (используется для аутентификации пользователя)-->
+                    </UserCert>
+                    <UserPrivateKey> <!--пользовательский закрытый ключ (используется для аутентификации пользователя)-->
+                    </UserPrivateKey>
+					<TimeZone>Local</TimeZone>
+					<CommandTimestamp>1</CommandTimestamp>
+                    <TrustedCerts> <!--корневые сертификаты-->
+                    </TrustedCerts>
+				</Settings>
+				<Rx>
+					<!--протокольные параметры объектов OPC UA:
+					node_id - ID узла в пространстве имен OPC UA
+					id_type - тип идентификатора узла OPC UA. Определяет его формат и рабочую область. Бывает 4 варианта: opaque, guid, numeric, string.
+					ns - (namespace) ID пространства имён OPC UA, к которому принадлежит узел NodeID-->
+					<Sig ref_id="41" node_id="1" id_type="Numeric" ns="2"/>
+					<Sig ref_id="43" node_id="13" id_type="Numeric" ns="2"/>
+					<Sig ref_id="45" node_id="22" id_type="Numeric" ns="2"/>
+					<Sig ref_id="47" node_id="23" id_type="Numeric" ns="6"/>
+					<Sig ref_id="49" node_id="85" id_type="Numeric" ns="6"/>
+					<Sig ref_id="51" node_id="101" id_type="Numeric" ns="6"/>
+				</Rx>
+				<Tx>
+					<Cmd ref_id="19" node_id="Demo.Static.Scalar.Boolean.ScoCommand" id_type="String" ns="2"/>
+					<Cmd ref_id="20" node_id="Demo.Static.Scalar.Structures.ScoCommand" id_type="String" ns="2" ext="1"/>
+					<!--ext - флаг, который определяет, как сущность (команда) реализована на внешнем устройстве OPC UA (клиенте либо сервере), с которым производится обмен по данному каналу. 
+					1 - команда представлена в виде структуры данных ExtensionObject.
+					0 - команда представлена обычным сигналом соответствующего типа.-->
+				</Tx>
+				
+				<Reports>
+				 <Report name="Подписка_02">
+				  <Settings>
+				   <PublishInterval>500</PublishInterval>
+				   <SamplingInterval>50</SamplingInterval>
+				   <QueueSize>1</QueueSize>
+				  </Settings>
+				  <Rx>
+				   <Sig ref_id="2006" ns="1" node_id="0" max="0" id_type="Numeric" min="0"/>
+				  </Rx>
+				  <Tx/>
+				 </Report>
+				 <Report name="Подписка">
+				  <Settings>
+				   <PublishInterval>500</PublishInterval>
+				   <SamplingInterval>1000</SamplingInterval>
+				   <QueueSize>1</QueueSize>
+				  </Settings>
+				  <Rx>
+				   <Sig ref_id="2007" ns="1" node_id="0" max="0" id_type="Numeric" min="0"/>
+				  </Rx>
+				  <Tx/>
+				 </Report>
+				</Reports> 				
+				
+			</Channel>
+			
+			<Channel id="4" xsi:type="OPCUA" guid="97d2677a-d5ae-47a2-bd31-a9d755ea264e">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>0</Client>
+					<Quality>
+						<Conv arg="VALIDITY_QUESTIONABLE | DETAIL_BAD_REFERENCE" res="BadOutOfService" />
+					</Quality>
+					<ServerUrl>opc.tcp://127.0.0.1:48010</ServerUrl>
+					<Redundancy>1</Redundancy>
+					<RedundantUrl>asd</RedundantUrl>
+					<TimeZone>UTC</TimeZone>
+					<SecurityPolicies>
+						<Basic256>0</Basic256>
+						<Basic128Rsa15>0</Basic128Rsa15>
+						<Basic256Sha256>0</Basic256Sha256>
+						<Aes128Sha256RsaOaep>1</Aes128Sha256RsaOaep>
+						<Aes256Sha256RsaPss>1</Aes256Sha256RsaPss>
+					</SecurityPolicies>
+					<SecurityModes>
+						<None>1</None>
+						<Sign>1</Sign>
+						<SignEncrypt>1</SignEncrypt>
+					</SecurityModes>
+					<AuthModes>
+						<Anonymous>1</Anonymous>
+						<Username>1</Username>
+						<Certificate>1</Certificate>
+						<Token>0</Token>
+					</AuthModes>
+					
+					<Users>
+						<User name="Vasya"> <!--здесь name - должно быть некое любое уникальное значение для каждого юзера, не обязательно Логин, можно просто индекс-->
+							<Login>Vasya</Login> 
+							<Password>123</Password>
+						</User>
+						<User name="2"> <!--здесь name - должно быть некое любое уникальное значение для каждого юзера, не обязательно Логин, можно просто индекс-->
+							<Login>Petya</Login>
+							<Password>123</Password>
+						</User>
+					</Users>
+					<TrustedCerts>
+						<Cert name="1"> <!--здесь name - должно быть некое любое уникальное значение для каждого сертификата, можно просто индекс-->
+							<Content> -----BEGIN CERTIFICATE-----
+								<!--клиентский сертификат--> MIIGczCCBVugAwIBAgIEYQFzvDANBgkqhkiG9w0BAQsFADCB8DEaMBgGCgmSJomT 8ixkARkWCjUxMi00ODY0MDMxCzAJBgNVBAYTAlJVMRUwEwYDVQQIDAzQnNC+0YHQ utCy0LAxMDAuBgNVBAcMJ9Cg0L7RgdGB0LjQudGB0LrQsNGPINGE0LXQtNC10YDQ sNGG0LjRjzEaMBgGA1UECgwR0JDQniAi0K3Qm9CQ0KDQkCIxKDAmBgNVBAsMH9CY 0L3QttC10L3QtdGA0L3Ri9C5INGG0LXQvdGC0YAxNjA0BgNVBAMMLdCa0L7QvNC8 0YPQvdC40LrQsNGG0LjQvtC90L3Ri9C5INGB0LXRgNCy0LXRgDAeFw0yMTA3Mjgx NTExNTZaFw0yNjA3MjcxNTExNTZaMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4 NjQwMzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UE Bwwn0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYD VQQKDBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQ vdGL0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQ uNC+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A MIIBCgKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwhiUiN JRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVuQFWE YRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsUeZIu CjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+nVuZ ypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X4RMp XQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABo4ICETCCAg0wDAYDVR0TAQH/ BAIwADBQBglghkgBhvhCAQ0EQxZBIkdlbmVyYXRlZCB3aXRoIFVuaWZpZWQgQXV0 b21hdGlvbiBVQSBCYXNlIExpYnJhcnkgdXNpbmcgT3BlblNTTCIwHQYDVR0OBBYE FKKLT4PiwQyRrUTaCBxXb5+6V76QMIIBIgYDVR0jBIIBGTCCARWAFKKLT4PiwQyR rUTaCBxXb5+6V76QoYH2pIHzMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4NjQw MzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UEBwwn 0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYDVQQK DBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQvdGL 0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQuNC+ 0L3QvdGL0Lkg0YHQtdGA0LLQtdGAggRhAXO8MA4GA1UdDwEB/wQEAwIC9DAgBgNV HSUBAf8EFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwNAYDVR0RBC0wK4YddXJuOjUx Mi00ODY0MDM6RWxhcmE6VWFTZXJ2ZXKCCjUxMi00ODY0MDMwDQYJKoZIhvcNAQEL BQADggEBAIbP6xQARlNd4lqXpnuOXAjATrTydd9hDuJTyTsawADechjlOfIkW4yM IKP/SxEgCsv10d+k/y7ut/Jw4IjTzNG5Q69hWyKBir8S+ikEH20hlNflmVOKzt8B 1lJJEEckr2UdyxSseWQ44hVycbEw43bMJ0Cd9VP28ncWeFKLAUNMQOZLf+RIPC3t Gz03gsT1zfcZy+oaCCeR6ENuW825ZE1vXLgP4jIWYG1KCGuQpHbufqCSulLPdqcl THXZckRVlTLY19elEV5+MvfTGIo8Fj1pWJWj9MeCyFB/aCqHbvPzC8V4Do7AAPFz SsSVq884c7H7MA3jagLcA0UU6jXTJhA= -----END CERTIFICATE-----
+							</Content>
+						</Cert>
+						<Cert name="2"> <!--здесь name - должно быть некое любое уникальное значение для каждого сертификата, можно просто индекс-->
+							<Content> -----BEGIN CERTIFICATE-----
+								<!--клиентский сертификат--> MIIGczCCBVugAwIBAgIEYQFzvDANBgkqhkiG9w0BAQsFADCB8DEaMBgGCgmSJomT 8ixkARkWCjUxMi00ODY0MDMxCzAJBgNVBAYTAlJVMRUwEwYDVQQIDAzQnNC+0YHQ utCy0LAxMDAuBgNVBAcMJ9Cg0L7RgdGB0LjQudGB0LrQsNGPINGE0LXQtNC10YDQ sNGG0LjRjzEaMBgGA1UECgwR0JDQniAi0K3Qm9CQ0KDQkCIxKDAmBgNVBAsMH9CY 0L3QttC10L3QtdGA0L3Ri9C5INGG0LXQvdGC0YAxNjA0BgNVBAMMLdCa0L7QvNC8 0YPQvdC40LrQsNGG0LjQvtC90L3Ri9C5INGB0LXRgNCy0LXRgDAeFw0yMTA3Mjgx NTExNTZaFw0yNjA3MjcxNTExNTZaMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4 NjQwMzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UE Bwwn0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYD VQQKDBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQ vdGL0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQ uNC+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A MIIBCgKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwhiUiN JRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVuQFWE YRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsUeZIu CjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+nVuZ ypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X4RMp XQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABo4ICETCCAg0wDAYDVR0TAQH/ BAIwADBQBglghkgBhvhCAQ0EQxZBIkdlbmVyYXRlZCB3aXRoIFVuaWZpZWQgQXV0 b21hdGlvbiBVQSBCYXNlIExpYnJhcnkgdXNpbmcgT3BlblNTTCIwHQYDVR0OBBYE FKKLT4PiwQyRrUTaCBxXb5+6V76QMIIBIgYDVR0jBIIBGTCCARWAFKKLT4PiwQyR rUTaCBxXb5+6V76QoYH2pIHzMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4NjQw MzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UEBwwn 0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYDVQQK DBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQvdGL 0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQuNC+ 0L3QvdGL0Lkg0YHQtdGA0LLQtdGAggRhAXO8MA4GA1UdDwEB/wQEAwIC9DAgBgNV HSUBAf8EFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwNAYDVR0RBC0wK4YddXJuOjUx Mi00ODY0MDM6RWxhcmE6VWFTZXJ2ZXKCCjUxMi00ODY0MDMwDQYJKoZIhvcNAQEL BQADggEBAIbP6xQARlNd4lqXpnuOXAjATrTydd9hDuJTyTsawADechjlOfIkW4yM IKP/SxEgCsv10d+k/y7ut/Jw4IjTzNG5Q69hWyKBir8S+ikEH20hlNflmVOKzt8B 1lJJEEckr2UdyxSseWQ44hVycbEw43bMJ0Cd9VP28ncWeFKLAUNMQOZLf+RIPC3t Gz03gsT1zfcZy+oaCCeR6ENuW825ZE1vXLgP4jIWYG1KCGuQpHbufqCSulLPdqcl THXZckRVlTLY19elEV5+MvfTGIo8Fj1pWJWj9MeCyFB/aCqHbvPzC8V4Do7AAPFz SsSVq884c7H7MA3jagLcA0UU6jXTJhA= -----END CERTIFICATE-----
+							</Content>
+						</Cert>
+						<Cert name="3"> <!--здесь name - должно быть некое любое уникальное значение для каждого сертификата, можно просто индекс-->
+							<Content> -----BEGIN CERTIFICATE-----
+								<!--клиентский сертификат--> MIIGczCCBVugAwIBAgIEYQFzvDANBgkqhkiG9w0BAQsFADCB8DEaMBgGCgmSJomT 8ixkARkWCjUxMi00ODY0MDMxCzAJBgNVBAYTAlJVMRUwEwYDVQQIDAzQnNC+0YHQ utCy0LAxMDAuBgNVBAcMJ9Cg0L7RgdGB0LjQudGB0LrQsNGPINGE0LXQtNC10YDQ sNGG0LjRjzEaMBgGA1UECgwR0JDQniAi0K3Qm9CQ0KDQkCIxKDAmBgNVBAsMH9CY 0L3QttC10L3QtdGA0L3Ri9C5INGG0LXQvdGC0YAxNjA0BgNVBAMMLdCa0L7QvNC8 0YPQvdC40LrQsNGG0LjQvtC90L3Ri9C5INGB0LXRgNCy0LXRgDAeFw0yMTA3Mjgx NTExNTZaFw0yNjA3MjcxNTExNTZaMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4 NjQwMzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UE Bwwn0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYD VQQKDBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQ vdGL0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQ uNC+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A MIIBCgKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwhiUiN JRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVuQFWE YRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsUeZIu CjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+nVuZ ypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X4RMp XQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABo4ICETCCAg0wDAYDVR0TAQH/ BAIwADBQBglghkgBhvhCAQ0EQxZBIkdlbmVyYXRlZCB3aXRoIFVuaWZpZWQgQXV0 b21hdGlvbiBVQSBCYXNlIExpYnJhcnkgdXNpbmcgT3BlblNTTCIwHQYDVR0OBBYE FKKLT4PiwQyRrUTaCBxXb5+6V76QMIIBIgYDVR0jBIIBGTCCARWAFKKLT4PiwQyR rUTaCBxXb5+6V76QoYH2pIHzMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4NjQw MzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UEBwwn 0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYDVQQK DBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQvdGL 0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQuNC+ 0L3QvdGL0Lkg0YHQtdGA0LLQtdGAggRhAXO8MA4GA1UdDwEB/wQEAwIC9DAgBgNV HSUBAf8EFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwNAYDVR0RBC0wK4YddXJuOjUx Mi00ODY0MDM6RWxhcmE6VWFTZXJ2ZXKCCjUxMi00ODY0MDMwDQYJKoZIhvcNAQEL BQADggEBAIbP6xQARlNd4lqXpnuOXAjATrTydd9hDuJTyTsawADechjlOfIkW4yM IKP/SxEgCsv10d+k/y7ut/Jw4IjTzNG5Q69hWyKBir8S+ikEH20hlNflmVOKzt8B 1lJJEEckr2UdyxSseWQ44hVycbEw43bMJ0Cd9VP28ncWeFKLAUNMQOZLf+RIPC3t Gz03gsT1zfcZy+oaCCeR6ENuW825ZE1vXLgP4jIWYG1KCGuQpHbufqCSulLPdqcl THXZckRVlTLY19elEV5+MvfTGIo8Fj1pWJWj9MeCyFB/aCqHbvPzC8V4Do7AAPFz SsSVq884c7H7MA3jagLcA0UU6jXTJhA= -----END CERTIFICATE-----
+							</Content>
+						</Cert>
+					</TrustedCerts>
+				</Settings>
+				<Rx/>
+				<Tx>
+					<Sig ref_id="42" src_id="41" location="" node_id="Коммуникационный Cервер.OPC UA клиент.Ethernet.Эл-100.Опрос.BOOLEAN" id_type="String" invert="0" ns="1"/>
+					<Sig ref_id="44" src_id="31" location="" node_id="Коммуникационный Cервер.MODBUS RTU клиент.COM3.SLAVE_2.INT16" id_type="String" coeff="1" ns="1"/>
+					<Sig ref_id="46" src_id="35" location="" node_id="Коммуникационный Cервер.MODBUS RTU клиент.COM3.SLAVE_3.INT32" id_type="String" coeff="1" ns="1"/>
+					<Sig ref_id="48" src_id="47" location="" node_id="Коммуникационный Cервер.OPC UA клиент.Ethernet.Эл-100.Опрос.INT64" id_type="String" coeff="1" ns="1"/>
+					<Sig ref_id="50" src_id="39" location="" node_id="Коммуникационный Cервер.MODBUS RTU клиент.COM3.SLAVE_4.FLOAT32" id_type="String" coeff="1" ns="1"/>
+					<Sig ref_id="52" src_id="51" location="" node_id="Коммуникационный Cервер.OPC UA клиент.Ethernet.Эл-100.Опрос.FLOAT64" id_type="String" coeff="1" ns="1"/>
+				</Tx>
+			</Channel>      
+
+			<Channel id="5" xsi:type="MODBUS_TCP" guid="7b1d71f7-cf0d-4e94-9737-2a5a9dd8b057">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>1</Client>
+					<Ip>127.0.0.1</Ip>
+					<DataTopicalityTime>20000</DataTopicalityTime>
+					<ByteOrder>3-4-1-2</ByteOrder> <!--Порядок записи байтов данных, полученных из канала в ответ на запрос-->
+					<PollingPeriod>10000</PollingPeriod> <!--Период опроса, мс.-->
+				</Settings>
+				<Rx>
+				<!--slave - адрес устройства, с которым ведётся обмен. Два подчиненных устройства не могут иметь один адрес.
+					Данный параметр может быть указан как индивидуально для каждого сигнла, так И/ИЛИ общий для всего канала.
+					func - тип функции в запросе:
+						01	Read Coils	чтение значений нескольких дискретных выходов
+						02	Read Discrete Inputs	чтение значений нескольких дискретных входов
+						03	Read Holding Registers	чтение значений нескольких аналоговых выходов
+						04	Read Input Registers	чтение значений нескольких аналоговых входов
+						05	Write single coil (для команд)	запись состояния одного дискретного выхода
+						15  Force Multiple Coils (для команд) запись значений в несколько регистров флагов 
+						16  Mask Write Register (для команд) запись в один регистр хранения с использованием маски «И» и маски «ИЛИ»
+
+					addr - номер регистра данных на устройстве
+					c_addr - адрес регистра подтверждения для команд-->
+					<Sig ref_id="17" slave="1" func="1" addr="100" byte_order="1-2-3-4"/>
+					<Sig ref_id="19" slave="1" func="3" addr="101"/>
+					<Sig ref_id="21" slave="1" func="3" addr="102"/>
+					<Sig ref_id="23" slave="1" func="3" addr="103"/>
+					<Sig ref_id="25" slave="1" func="3" addr="105"/>
+					<Sig ref_id="27" slave="1" func="3" addr="107"/>
+					<Sig ref_id="69" slave="1" func="3" addr="1200:10H"/>
+					<Sig ref_id="71" slave="1" func="3" addr="1210:60L"/>
+				</Rx>
+				<Tx>
+					<Sig ref_id="18" src_id="1" slave="1" func="5" addr="200"/>
+					<Sig ref_id="20" src_id="5" slave="1" func="6" addr="201"/>
+					<Sig ref_id="22" src_id="33" slave="1" func="6" addr="202"/>
+					<Sig ref_id="24" src_id="45" slave="1" func="16" addr="203"/>
+					<Sig ref_id="26" src_id="11" slave="1" func="16" addr="205"/>
+					<Sig ref_id="28" src_id="7" slave="1" func="16" addr="207"/>
+					
+					<Cmd ref_id="7" slave="1" func="5" addr="4" c_addr="5" complete="1" timeout="15000"/>
+					<Cmd ref_id="8" slave="1" func="6" addr="6" timeout="5000"/>
+					<Cmd ref_id="9" slave="1" func="6" addr="7"/>
+					<Cmd ref_id="10" slave="1" func="16" addr="8" c_addr="10" complete="1" timeout="5000"/>
+					<Cmd ref_id="11" slave="1" func="6" addr="12" byte_order="1-2-3-4"/>
+					<Cmd ref_id="12" slave="1" func="16" addr="13" byte_order="1-2-3-4"/>
+				</Tx>
+			</Channel>
+
+			<Channel id="6" xsi:type="MODBUS_RTU" guid="c21f8e46-1cf2-40cb-a55d-714920252f72">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>1</Client>
+					<LogSignals>1</LogSignals>
+					<Slave>2</Slave> <!--адрес опрашиваемого устройства, общий для всех объектов канала, у которых этот параметр не указан явно-->
+					<PollingPeriod>100</PollingPeriod> <!--период опроса, мс.-->
+					<SetTimeStamp>1</SetTimeStamp> <!--Флаг обновления метки времени по изменению данных (если 1 - она меняется по факту получения, если 0 - меняется только при изменении значения)-->
+					<EnableTrace>1</EnableTrace> <!--трассировка пакетов в логе. НЕ НАСТРАИВАЕТСЯ В ИНТЕРФЕЙСЕ-->
+					<!--протокольно-специфичные настройки MODBUS RTU -->
+					<CommPort>COM3</CommPort> <!--имя дескриптора последовательного порта-->
+					<BaudRate>115200</BaudRate> <!--скорость передачи-->
+					<DataBits>8</DataBits> <!--количество бит данных-->
+					<Parity>N</Parity><!--признак четности-->
+					<StopBits>1</StopBits> <!--количество стоповых битов-->
+					<SlaveTimeout>200</SlaveTimeout> <!--величина ожидания ответа на запрос, мс.-->
+					<RepeatCount>2</RepeatCount> <!--количество повторных запросов при отсутствии ответа на запрос перед переходом к опросу следующего устройства.-->
+					<NextRequestDelay>2</NextRequestDelay> <!--Величина паузы между запросами в рамках опроса одного устройства, мс.-->
+					<NextSlaveDelay>10</NextSlaveDelay> <!--Величина паузы перед опросом следующего устройства, мс. -->
+				</Settings>
+				<Rx>
+					<Sig ref_id="29" func="1" addr="100" byte_order="1-2-3-4"/>
+					<Sig ref_id="31" func="3" addr="101" byte_order="1-2-3-4"/>
+					<Sig ref_id="33" slave="2" func="3" addr="102"/>
+				</Rx>
+				<Tx>
+					<Sig ref_id="30" src_id="3" func="5" addr="200"/>
+					<Sig ref_id="32" src_id="43" func="6" addr="201"/>
+					<Sig ref_id="34" src_id="21" func="6" addr="202"/>
+					
+					<Cmd ref_id="13" func="5" addr="4" c_addr="5" complete="1" timeout="15000"/>
+					<Cmd ref_id="14" func="6" addr="6" timeout="5000"/>
+					<Cmd ref_id="15" func="6" addr="7" byte_order="1-2-3-4"/>
+				</Tx>
+			</Channel>
+			
+			<Channel id="7" xsi:type="MODBUS_RTU" guid="066901b4-f062-4770-a77b-2a170797f892">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>1</Client>
+					<LogSignals>1</LogSignals>
+					<PollingPeriod>100</PollingPeriod>
+					<SetTimeStamp>1</SetTimeStamp>
+					<EnableTrace>1</EnableTrace>
+					<CommPort>COM3</CommPort>
+					<BaudRate>115200</BaudRate>
+					<DataBits>8</DataBits>
+					<Parity>N</Parity>
+					<StopBits>1</StopBits>
+					<SlaveTimeout>400</SlaveTimeout>
+					<RepeatCount>3</RepeatCount>
+					<NextRequestDelay>2</NextRequestDelay>
+					<NextSlaveDelay>10</NextSlaveDelay>					
+				</Settings>
+				<Rx>
+					<Sig ref_id="35" slave="3" func="3" addr="400"/>
+					<Sig ref_id="37" slave="3" func="3" addr="402"/>
+					<Sig ref_id="39" slave="3" func="3" addr="404"/>
+				</Rx>
+				<Tx>
+					<Sig ref_id="36" src_id="45" slave="3" func="16" addr="210"/>
+					<Sig ref_id="38" src_id="25" slave="3" func="16" addr="212"/>
+					<Sig ref_id="40" src_id="49" slave="3" func="16" addr="214"/>
+					
+					<Cmd ref_id="16" slave="3" func="16" addr="8" c_addr="10" complete="1" timeout="5000"/>
+					<Cmd ref_id="17" slave="3" func="6" addr="12"/>
+					<Cmd ref_id="18" slave="3" func="16" addr="13"/>
+				</Tx>
+			</Channel>
+			
+			<Channel id="177" xsi:type="MODBUS_RTU" guid="066901b4-f062-4770-a77b-1a230797f892">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>0</Client>
+					<LogSignals>1</LogSignals>
+					<StopBySourceMissing>0</StopBySourceMissing> <!--Отключать при отсутствии связи с источником-->		
+					<SetTimeStamp>1</SetTimeStamp>
+					<EnableTrace>1</EnableTrace>
+					<TransmitInvalidValues>1</TransmitInvalidValues> <!--Передача невалидных значений-->
+					<CommPort>COM1</CommPort>
+					<BaudRate>115200</BaudRate>
+					<DataBits>8</DataBits>
+					<Parity>N</Parity>
+					<StopBits>1</StopBits>
+					<SlaveTimeout>400</SlaveTimeout>
+					<RepeatCount>3</RepeatCount>
+				</Settings>
+				<Rx>
+				</Rx>
+				<Tx>
+					<Sig ref_id="36" src_id="45" slave="3" func="16" addr="210"/>
+				</Tx>
+			</Channel>
+
+			<Channel id="8" xsi:type="IEC61850" guid="e967d3ca-7d77-4c68-b11f-bcb3b5d4a565">
+				<Controller type="NO_BUFFERING"/> <!--нет буферизации на канале-->			
+				<Settings>
+					<Client>1</Client>
+                    <Ip>172.17.1.51</Ip>
+					<Port>102</Port>
+					<Ied>ENIP2</Ied>
+					<PollingPeriod>10</PollingPeriod>
+					<Authentication>
+						<Mechanism>PASSWORD</Mechanism>
+						<Password>user2@testpw</Password>
+					</Authentication>
+					<TimeZone>Local</TimeZone>
+				</Settings>
+				<Rx>
+					<Sig ref_id="53" da="stVal" do="BAYCTRL/GGIO1$ST$Ind1"/>
+					<Sig ref_id="55" da="mag$f" do="BAYCTRL/MMXU1$MX$Hz"/>
+				</Rx>
+				<Tx>
+					<Cmd ref_id="21" da="Oper$ctlVal" do="BAYCTRL/XSWI3$CO$BlkOpn"
+					timeout="10000" orcat="2" orident="13D5C007" interlock="1" synchro="1"></Cmd>
+					<Cmd ref_id="22" da="Oper$ctlVal" do="BAYCTRL/XSWI3$CO$BlkOpn"
+					timeout="10000" orcat="2" orident="13D5C007" interlock="1" synchro="1"></Cmd>
+				</Tx>
+				<Reports>
+					<Report name="urcbMX"> <!--имя отчёта-->
+						<Settings>
+						<!--настройки отчёта, полученные из файла (практически все из них не редактируемы из интерфейса Конфигуратора)-->
+							<RptName>BAYCTRL/LLN0$RP$urcbMX</RptName> <!--нахождение отчета в адресном пространстве сигналов-->
+							<DsName>BAYCTRL/LLN0$MainMX</DsName> <!--нахождение набора данных в пространстве сервера-->
+							<MaxInst>1</MaxInst> <!--количество экземпляров отчета-->
+							<TriggerOptions> <!--настройка срабатывания данных подписки - по каким событиям отправляются данные-->
+								<DataChange>1</DataChange><!--изменение данных-->
+								<QualityChange>1</QualityChange><!--изменение качества-->
+								<Integrity>1</Integrity><!--изменение целостности-->
+								<IntegrityPeriod>60000</IntegrityPeriod><!--Период целостности. Время, по истечении которого должен быть сформирован отчет о целостности(сохранности) данных.
+								Все события должны быть отправлены до отправления отчета о целостности.-->
+								<GeneralInterrogation>1</GeneralInterrogation><!--общий опрос-->
+								<DataUpdate>0</DataUpdate><!--обновление данных-->
+							</TriggerOptions> 
+							<SequenceNumber>0</SequenceNumber> <!--Порядковый номер-->
+							<TimeOfEntry>0</TimeOfEntry> <!--Указание времени записи--> 
+							<ReasonForInclusion>1</ReasonForInclusion> <!--Указание причины включения-->
+							<DataSetName>0</DataSetName> <!--Указание имени набора данных-->
+							<DataReference>0</DataReference> <!--Указание ссылки на данные-->
+							<BufferOverflow>0</BufferOverflow> <!--Указание переполнения буфера-->
+							<EntryID>0</EntryID> <!--Указание идентификатора записи-->
+							<ConfigRevision>1</ConfigRevision> <!--Проверка конфигурации. Реагирует на изменение конфигурации устройства, с которого идут данные.-->
+						</Settings>
+						<Rx>
+							<Sig ref_id="63" da="cVal$mag$f" do="BAYCTRL/MMXU1$MX$W$phsC"/>
+							<!--da - имя объекта данных
+								do - местоположение объекта в адресном пространстве устройства (IED)-->
+							<Sig ref_id="65" da="cVal$mag$f" do="BAYCTRL/MMXU1$MX$PPV$phsAB"/>
+							<Sig ref_id="67" da="mag$f" do="BAYCTRL/MMXU1$MX$Hz"/>
+						</Rx>
+						<Tx/>
+					</Report>
+					<Report name="brcbST">
+						<Settings>
+							<RptName>BAYCTRL/LLN0$BR$brcbST</RptName>
+							<DsName>BAYCTRL/LLN0$MainST</DsName>
+							<MaxInst>1</MaxInst>
+							<TriggerOptions>
+								<DataChange>1</DataChange>
+								<QualityChange>1</QualityChange>
+								<Integrity>1</Integrity>
+								<IntegrityPeriod>60000</IntegrityPeriod>
+								<GeneralInterrogation>1</GeneralInterrogation>
+								<DataUpdate>0</DataUpdate>
+							</TriggerOptions>
+							<SequenceNumber>0</SequenceNumber>
+							<TimeOfEntry>0</TimeOfEntry>
+							<ReasonForInclusion>1</ReasonForInclusion>
+							<DataSetName>0</DataSetName>
+							<DataReference>0</DataReference>
+							<BufferOverflow>0</BufferOverflow>
+							<EntryID>0</EntryID>
+							<ConfigRevision>1</ConfigRevision>
+						</Settings>
+						<Rx>
+							<Sig da="stVal" ref_id="57" do="BAYCTRL/GGIO1$ST$Ind9"/>
+							<Sig da="stVal" ref_id="59" do="BAYCTRL/GGIO1$ST$Ind10"/>
+							<Sig da="stVal" ref_id="61" do="BAYCTRL/GGIO1$ST$Ind16"/>
+						</Rx>
+						<Tx/>
+					</Report>
+				</Reports>
+			</Channel>
+			
+			<Channel id="10" xsi:type="IEC61850" guid="8003617d-36c7-4cab-82d1-d727ee7cea82">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>0</Client>
+                    <Ip>0.0.0.0</Ip>
+					<Port>102</Port>
+					<Ied>ELECONT</Ied>
+					<Authentication>
+						<Mechanism>NONE</Mechanism>
+						<Password></Password>
+					</Authentication>
+					<TimeZone>UTC</TimeZone>
+				</Settings>
+				<!-- Описание наборов данных сервера 61850 -->
+				<DataSets>
+					<DsAlias name="BAYCTRL/LLN0$MainMX">Ds1</DsAlias> <!-- Указание короткого псевдонима для имени набора данных  -->
+					<DsAlias name="BAYCTRL/LLN0$MainST">Ds2</DsAlias> <!-- Указание короткого псевдонима для имени набора данных  -->
+				</DataSets>
+				<Rx>
+				</Rx>
+				<Tx>
+					<!-- ds - привязка к набору данных по ПСЕВДОНИМУ.
+					     Если сигнал входит в несколько наборов, имена псевдонимов перечисляются через запятую: ds="Ds1,Ds2,Ds3"
+					     cdc - класс данных объекта, на текущий момент реализованы SPS, DPS, INS, MV, CMV
+						 vi - имя атрибута для комплексного объекта, может быть mag или ang (по умолчанию mag)
+						 desc - строка с текстовым описанием сигнала
+					-->
+					<Sig ref_id="53" do="BAYCTRL/GGIO1$ST$Ind1" cdc="SPS" desc="Place signal descripton here"/>
+					<Sig ref_id="55" do="BAYCTRL/MMXU1$MX$Hz" cdc="MV" ds="Ds1"/>
+					<Sig ref_id="63" do="BAYCTRL/MMXU1$MX$W$phsC" cdc="CMV" vi="mag" ds="Ds1"/>
+					<Sig ref_id="65" do="BAYCTRL/MMXU1$MX$PPV$phsAB" cdc="CMV" vi="ang" ds="Ds1"/>
+					<Sig ref_id="57" do="BAYCTRL/GGIO1$ST$Ind9" cdc="SPS" ds="Ds2"/>
+					<Sig ref_id="59" do="BAYCTRL/GGIO1$ST$Ind10" cdc="SPS" ds="Ds2"/>
+					<Sig ref_id="61" do="BAYCTRL/GGIO1$ST$Ind16" cdc="SPS" ds="Ds2"/>
+				</Tx>
+				<Reports>
+					<Report name="urcbMX">
+						<Settings>
+							<RptName>BAYCTRL/LLN0$RP$urcbMX</RptName>
+							<DsName>BAYCTRL/LLN0$MainMX</DsName>
+							<MaxInst>1</MaxInst>
+							<TriggerOptions>
+								<DataChange>1</DataChange>
+								<QualityChange>1</QualityChange>
+								<Integrity>1</Integrity>
+								<IntegrityPeriod>60000</IntegrityPeriod>
+								<GeneralInterrogation>1</GeneralInterrogation>
+								<DataUpdate>0</DataUpdate>
+							</TriggerOptions> 
+							<SequenceNumber>0</SequenceNumber>
+							<TimeOfEntry>0</TimeOfEntry>
+							<ReasonForInclusion>1</ReasonForInclusion>
+							<DataSetName>0</DataSetName>
+							<DataReference>0</DataReference>
+							<BufferOverflow>0</BufferOverflow>
+							<EntryID>0</EntryID>
+							<ConfigRevision>1</ConfigRevision>
+						</Settings>
+						<!-- Для серверных отчётов 61850 достаточно указания DsName, явно описывать сигналы не требуется -->
+						<Rx/>
+						<Tx/>
+					</Report>
+					<Report name="brcbST">
+						<Settings>
+							<RptName>BAYCTRL/LLN0$BR$brcbST</RptName>
+							<DsName>BAYCTRL/LLN0$MainST</DsName>
+							<MaxInst>1</MaxInst>
+							<TriggerOptions>
+								<DataChange>1</DataChange>
+								<QualityChange>1</QualityChange>
+								<Integrity>1</Integrity>
+								<IntegrityPeriod>60000</IntegrityPeriod>
+								<GeneralInterrogation>1</GeneralInterrogation>
+								<DataUpdate>0</DataUpdate>
+							</TriggerOptions>
+							<SequenceNumber>0</SequenceNumber>
+							<TimeOfEntry>0</TimeOfEntry>
+							<ReasonForInclusion>1</ReasonForInclusion>
+							<DataSetName>0</DataSetName>
+							<DataReference>0</DataReference>
+							<BufferOverflow>0</BufferOverflow>
+							<EntryID>0</EntryID>
+							<ConfigRevision>1</ConfigRevision>
+						</Settings>
+						<!-- Для серверных отчётов 61850 достаточно указания DsName, явно описывать сигналы не требуется -->
+						<Rx/>
+						<Tx/>
+					</Report>
+				</Reports>
+			</Channel>
+			
+			<!--Внутрениий служебный канал, по которому графический интерфейс получает данные от КС. В интерфейсе не виден. Берет данные из ядра КС в формате внутренней модели-->
+			<Channel id="9" xsi:type="ELECONT" guid="427718d2-69b1-40b6-9122-bac2ebced5d0">
+				<Controller type="NO_BUFFERING"/>
+				<Settings>
+					<Client>0</Client>
+					<Ip>0.0.0.0</Ip>
+					<Port>9039</Port>
+					<StreamPollingPeriod>500</StreamPollingPeriod>
+					<UserInterface/>
+					<WatchdogTimeout>10000</WatchdogTimeout>	<!-- Время в миллисекундах, определяющее введённое понятие логическиго соединения в канале gRPC. 
+																 Под понятием соединения понимаются периодические вызовы со стороны gRPC клиента любой функции elecont.proto. 
+																Соединение считается установленным, если с момента последнего вызова прошло время меньше установленного. 
+																В противном случае оно считается разорванным.  -->
+				</Settings>
+				<Tx>
+					<AllSignals/> <!--использование на данном канале всех сигналов, описанных в конфигурации (для команд не готово)-->
+				</Tx>
+			</Channel>
+			
+			<!--НЕТ В КОНФИГУРАТОРЕ. Пример сокращенной записи для использования на канале всех сигналов, описанных конфигурации.
+			Применение этой возможности для канала с протокольно-зависимыми параметрами сигналов требует указания формата для генерации каждого параметра.
+			Возможны два варианта генерации: постоянное значение параметра либо увеличение на единицу для каждого последующего сигнала.-->
+			<Channel id="10" xsi:type="IEC104" guid="87654321-4321-4321-4321-110987654321">
+				<Controller type="NO_BUFFERING" />
+				<Settings>
+					<Client>0</Client>
+					<Ip>0.0.0.0</Ip>
+					<Port>2406</Port>
+					<TimeZone>Local</TimeZone>
+				</Settings>
+				<Rx/>
+				<Tx>
+					<AllSignals caa="2" ioa="1++"/>
+					<!--у всех сигналов будет адрес ASDU 2, адрес первого сигнала = 1, адрес каждого следующего сигнала будет на единицу больше адреса предыдущего сигнала.-->
+				</Tx>
+			</Channel>
+
+            <!--Канал передачи данных в архив. Изменения всех сигналов/команд, описанных как передаваемые на этом канале, регистрируются в базе данных архива КС.-->
+			<Channel id="11" xsi:type="ELECONT" guid="59b25d0f-8ffe-4735-ad75-91daf780fca8">
+				<Controller type="NO_BUFFERING"/>
+				<Settings>
+					<Client>1</Client>
+					<Ip>127.0.0.1</Ip>
+					<Port>9040</Port>
+					<LogSignals>1</LogSignals>
+				</Settings>
+				<Tx>
+					<AllSignals/>
+				</Tx>
+			</Channel>
+
+			<Channel id="12" xsi:type="ETHERCAT" guid="ab1f8c46-3e25-6dc8-a7f4-34fd2025dc76">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>1</Client>
+					<LogSignals>1</LogSignals>
+                    <!--Период опроса, мс., в настоящее время установлено фиксированное значение 100 -->
+					<PollingPeriod>100</PollingPeriod>
+				</Settings>
+				<Rx>
+				<!-- slave - адрес устройства на шине (реализовано чтение данных устройств из буфера IOmap мастера шины slave[0]);
+					 index - номер 8-битного регистра в буфере IOmap;
+                     offset - смещение в битах начала данных сигнала;
+				-->
+					<Sig ref_id="1" slave="0" index="0" offset="2"/>
+				</Rx>
+				<Tx>
+				</Tx>
+			</Channel>
+			
+			<Channel id="13" xsi:type="MQTT" guid="3d14b9d3-958c-496f-9949-47958b222a2c">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>0</Client>
+					<Port>1883</Port>
+					<Version>2</Version> <!--0 - версия 3.1; 1 - версия 3.1.1; 2 - версия 5.0-->
+					<DataFormat>raw</DataFormat>
+					<BrokerAddress>127.0.0.1</BrokerAddress> <!--адрес MQTT брокера, может быть указан как Ip или как Url-->
+					<QoS>1</QoS>
+					<Retain>0</Retain>
+					<Topic>RootTopic</Topic>
+					<HighPerformanceMode>0</HighPerformanceMode>
+					<Mechanism>NONE</Mechanism>
+					<Password/>
+					<User/>
+          <OwnCert>-----BEGIN CERTIFICATE----- <!--сертификат-->
+MIIGczCCBVugAwIBAgIEYQFzvDANBgkqhkiG9w0BAQsFADCB8DEaMBgGCgmSJomT
+8ixkARkWCjUxMi00ODY0MDMxCzAJBgNVBAYTAlJVMRUwEwYDVQQIDAzQnNC+0YHQ
+utCy0LAxMDAuBgNVBAcMJ9Cg0L7RgdGB0LjQudGB0LrQsNGPINGE0LXQtNC10YDQ
+sNGG0LjRjzEaMBgGA1UECgwR0JDQniAi0K3Qm9CQ0KDQkCIxKDAmBgNVBAsMH9CY
+0L3QttC10L3QtdGA0L3Ri9C5INGG0LXQvdGC0YAxNjA0BgNVBAMMLdCa0L7QvNC8
+0YPQvdC40LrQsNGG0LjQvtC90L3Ri9C5INGB0LXRgNCy0LXRgDAeFw0yMTA3Mjgx
+NTExNTZaFw0yNjA3MjcxNTExNTZaMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4
+NjQwMzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UE
+Bwwn0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYD
+VQQKDBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQ
+vdGL0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQ
+uNC+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwhiUiN
+JRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVuQFWE
+YRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsUeZIu
+CjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+nVuZ
+ypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X4RMp
+XQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABo4ICETCCAg0wDAYDVR0TAQH/
+BAIwADBQBglghkgBhvhCAQ0EQxZBIkdlbmVyYXRlZCB3aXRoIFVuaWZpZWQgQXV0
+b21hdGlvbiBVQSBCYXNlIExpYnJhcnkgdXNpbmcgT3BlblNTTCIwHQYDVR0OBBYE
+FKKLT4PiwQyRrUTaCBxXb5+6V76QMIIBIgYDVR0jBIIBGTCCARWAFKKLT4PiwQyR
+rUTaCBxXb5+6V76QoYH2pIHzMIHwMRowGAYKCZImiZPyLGQBGRYKNTEyLTQ4NjQw
+MzELMAkGA1UEBhMCUlUxFTATBgNVBAgMDNCc0L7RgdC60LLQsDEwMC4GA1UEBwwn
+0KDQvtGB0YHQuNC50YHQutCw0Y8g0YTQtdC00LXRgNCw0YbQuNGPMRowGAYDVQQK
+DBHQkNCeICLQrdCb0JDQoNCQIjEoMCYGA1UECwwf0JjQvdC20LXQvdC10YDQvdGL
+0Lkg0YbQtdC90YLRgDE2MDQGA1UEAwwt0JrQvtC80LzRg9C90LjQutCw0YbQuNC+
+0L3QvdGL0Lkg0YHQtdGA0LLQtdGAggRhAXO8MA4GA1UdDwEB/wQEAwIC9DAgBgNV
+HSUBAf8EFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwNAYDVR0RBC0wK4YddXJuOjUx
+Mi00ODY0MDM6RWxhcmE6VWFTZXJ2ZXKCCjUxMi00ODY0MDMwDQYJKoZIhvcNAQEL
+BQADggEBAIbP6xQARlNd4lqXpnuOXAjATrTydd9hDuJTyTsawADechjlOfIkW4yM
+IKP/SxEgCsv10d+k/y7ut/Jw4IjTzNG5Q69hWyKBir8S+ikEH20hlNflmVOKzt8B
+1lJJEEckr2UdyxSseWQ44hVycbEw43bMJ0Cd9VP28ncWeFKLAUNMQOZLf+RIPC3t
+Gz03gsT1zfcZy+oaCCeR6ENuW825ZE1vXLgP4jIWYG1KCGuQpHbufqCSulLPdqcl
+THXZckRVlTLY19elEV5+MvfTGIo8Fj1pWJWj9MeCyFB/aCqHbvPzC8V4Do7AAPFz
+SsSVq884c7H7MA3jagLcA0UU6jXTJhA=
+-----END CERTIFICATE-----
+                    </OwnCert>
+                    <PrivateKey>-----BEGIN RSA PRIVATE KEY----- <!-- ключ к сертификату-->
+MIIEpAIBAAKCAQEArw6/Df3Qevp8hB3V9Ec94DHEZ8MXF1TCFT8TZWNVBWzxgWwh
+iUiNJRipLt69IuWoQ+px9gz6nDSn8cNc1XHyKiLmstCbqQiduFMpmeEJJgVwCNVu
+QFWEYRAvsMWXXMPnfENg6eo4ZGn9A6JRn7ufdsyJpIaKOm6QSuG3JqWIqk80BJsU
+eZIuCjRAcNFwcgxtaORT75WmjzH8aeNNsUAzhKMBDolvi1qo2BhDBn8GML3NIlN+
+nVuZypw5rxMm1L1846qjYorWftpYk0zJHaSBzxtqqvBL/vVTSiYWAYf1NufUZv0X
+4RMpXQnDWo1i2zbnwhW7hHDNKbB5bvbZckfarwIDAQABAoIBAEZUrFmYsZvW6xPB
+UOY1gRyDoh71+F79RIR4tPg08kGdxWFz6f1X0q0mvUIBZweQMQwoMuThzgXX+eld
+zfxLLTnUj88jlIZS2drmPn5+NMi7wokqBoN+WBMPB7oDiI5Sfrwj7dnMqh9dnbNK
+EXUVUjnObzZUf1B+fyY2jPjP5JpXUQ2CYNtyPvbrPpSQRDjY0XJs9oYUmMmJS2Mc
+EsR2yBjRJRxAfx7u/qY8fHr/OvvX2Pfi5hrZ2iEsY0ezq3GPju5BtfDMhHe9ZI6S
+CUL2JtyCj3TqVdypLP2WzJzielYUv29aWGRG8adXtaKbDeM8ftTEEmtMCPbVQEgL
+N10zd0ECgYEA52yqQSHFT5JL37opFh3RE8Y5H7Zoplc5akD0h1xLTNhP7lZGe974
+vO8Id9/xwF6353LgSal18I0/I39yY3Kep37RRgRCTkdm7QlW2G4HdWG5Hr6RETOa
+bMdE1cb2PQBAU8F9z/hu4Ve/BYPkueG4vVcGWiPUdZaETfPOzvYyd/ECgYEAwaW7
+rW0LISe2Y2YbK78JLYpWpU7nq1F7kPhEEFsMJwWvFwXpRnpUI4M27i1NYADICH7R
+cJgxS2e69xKHPVVft+qWyAqV370A//d9zrl1ZqDmlapvL9Y8Bj0mfo3/zuGqvDUB
+0i39p00DXfgZL7WpyAL/mTsig3R3S+JW0CnhHJ8CgYEAr4ombnceQmg280IzDhqZ
+z8UI6XwkTyBUZbtVgCNK3sQphSCeIDGWPUGXC86rgn6WQpJJfLZ0xn1tShDPBI4Z
+t/Ui6lgqr1PLx7rQzCRRtgDlOWPVh9W7qg1QslNTzhuVr7JSK2FHQdicBaPw5+pG
+hiAvqkoJSxRb0QFBeo0W5RECgYEAuVs1YNRugcbsewqCWYZbd57iPwtfD4pIN8Sc
+CffMkxGKvgPnfZGcNf3kN2lfldRJpHAXc6oKDT52JQc0Mk4k9/txZntTaD0W1uwE
+HTtCGAFNldb05JoxDFu+HAc548H4Vnx6iL+C+3/pCCpxmUxO/md4VyjWaXOyuQ0m
+wcxEcMsCgYA5avzT47cdeCSk1yM974Z7hBj6ZdCTFbGE+dsGKLS9GrXCLtb/TObt
+QMuhL5zCgyjYxxst3lIJ6jH5+0kohcmAXsCa30fdGbXm8+IPYaSqIiFHhKeLjNBI
+NR2JNaWGdLwvSHvirEgk/TYGoLeCp9prFdyYQTU0qHL3ogNnUaq0/A==
+-----END RSA PRIVATE KEY-----
+                    </PrivateKey>
+                    <TrustedCerts> <!--корневой сертификат-->
+                    </TrustedCerts>
+					<TimeZone>Local</TimeZone>                    
+				</Settings>
+				<!-- Описание форматов данных, используемых для приёма/передачи сигналов по каналу MQTT -->
+				<DataFormat name="elara">
+					<Kind>JSON</Kind> <!-- Тип сообщения. Возможные варианты: JSON, STRING, YANDEX -->
+					<ValueKey>value</ValueKey> <!-- json-тег, содержащий значение сигнала (в виде строки) -->
+					<ValueTypeKey>value_type</ValueTypeKey> <!-- json-тег, содержащий тип значения (в виде строки) -->
+					<QualityKey>quality</QualityKey> <!-- json-тег, содержащий качество сигнала (целое число или строка, пока неясно...) -->
+					<TimestampKey>timestamp</TimestampKey> <!-- json-тег, содержащий метку времени сигнала (в виде целого числа миллисекунд, UNIX-time) -->
+				</DataFormat>
+				<DataFormat name="raw">
+					<Kind>STRING</Kind>
+				</DataFormat>
+				<DataFormat name="yandex">
+					<Kind>YANDEX</Kind> <!-- Тип сообщения. Возможные варианты: JSON, STRING, YANDEX -->
+					<NameKey>name</NameKey> <!-- json-тег, содержащий имя сигнала (в виде строки) -->
+					<ValueKey>value</ValueKey> <!-- json-тег, содержащий значение сигнала (в виде строки, bool значения в этом формате имеют вид 0 или 1) -->
+					<ValueTypeKey>value_type</ValueTypeKey> <!-- json-тег, содержащий тип значения (в виде строки) -->
+					<QualityKey>quality</QualityKey> <!-- json-тег, содержащий качество сигнала (строка с возможными значениями: good, questionable, invalid) -->
+					<TimestampKey>timestamp</TimestampKey> <!-- json-тег, содержащий метку времени сигнала (в виде целого числа миллисекунд, UNIX-time) -->
+				</DataFormat>
+				<Rx>
+				</Rx>
+				<Tx>
+					<Sig ref_id="70" src_id="53" topic="SomeTopic" df="elara"/>
+					<Sig ref_id="72" src_id="55" topic="AnotherTopic" df="raw_string"/>
+					<Sig ref_id="74" src_id="45" topic="ThirdTopic" df="raw_bytes"/>
+				</Tx>
+			</Channel>
+
+			<Channel id="14" xsi:type="DIAG" guid="05336ebc-0700-423c-a76c-379a40d26880">
+				<Controller type="NO_BUFFERING"/>			
+				<Settings>
+					<Client>1</Client>
+					<LogSignals>1</LogSignals>
+				</Settings>
+				<Rx>
+				<!-- kind - диагностическая функция
+					 channel_guid - GUID диагностируемого канала 
+				-->
+					<Sig ref_id="80" kind="connection_state" channel_guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB"/>
+					<Sig ref_id="81" kind="connection_state" channel_guid="ffffffff-ffff-ffff-ffff-ffffffffffff"/>
+					<Sig ref_id="82" kind="connection_state" channel_guid="e8b7c9bf-9946-44a7-ac03-b1989564fd73"/>
+					<Sig ref_id="83" kind="connection_state" channel_guid="97d2677a-d5ae-47a2-bd31-a9d755ea264e"/>
+					<Sig ref_id="84" kind="connection_state" channel_guid="7b1d71f7-cf0d-4e94-9737-2a5a9dd8b057"/>
+					<Sig ref_id="85" kind="connection_state" channel_guid="c21f8e46-1cf2-40cb-a55d-714920252f72"/>
+					<Sig ref_id="86" kind="connection_state" channel_guid="066901b4-f062-4770-a77b-2a170797f892"/>
+					<Sig ref_id="87" kind="connection_state" channel_guid="e967d3ca-7d77-4c68-b11f-bcb3b5d4a565"/>
+					<Sig ref_id="88" kind="connection_state" channel_guid="8003617d-36c7-4cab-82d1-d727ee7cea82"/>
+					<Sig ref_id="89" kind="connection_state" channel_guid="427718d2-69b1-40b6-9122-bac2ebced5d0"/>
+					<Sig ref_id="90" kind="connection_state" channel_guid="87654321-4321-4321-4321-110987654321"/>
+					<Sig ref_id="91" kind="connection_state" channel_guid="59b25d0f-8ffe-4735-ad75-91daf780fca8"/>
+					<Sig ref_id="92" kind="connection_state" channel_guid="ab1f8c46-3e25-6dc8-a7f4-34fd2025dc76"/>
+					<Sig ref_id="93" kind="connection_state" channel_guid="3d14b9d3-958c-496f-9949-47958b222a2c"/>
+				</Rx>
+				<Tx>
+				</Tx>
+			</Channel>
+
+			<Channel id="15" xsi:type="OMRON_FINS" guid="7b1d71f7-7777-4e94-9737-2a5a9dd8b057">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>1</Client>     <!-- Всегда 1, сервер не реализован-->
+					<Ip>172.17.1.45</Ip>
+					<Port>9600</Port>
+					<PollingPeriod>10000</PollingPeriod> <!-- Период опроса, мс.-->
+					<Timeout>500</Timeout> <!-- Время реакции устройства, мс.-->
+					
+					<!-- Настройки транспортного уровня (диапазон значений [0; 255]-->
+					<!-- Пример для устройства на стенде-->	
+					<GatewayCnt>2</GatewayCnt> <!-- Gateway Count-->
+					<DstNetwork>0</DstNetwork> <!-- Destination network number-->
+					<DstNode>45</DstNode>      <!-- Destination node number - Возможно соответствует последнему октету IP-адреса-->
+					<DstUnit>0</DstUnit>              <!-- Destination unit number-->
+					<SrcNetwork>0</SrcNetwork> <!-- Source network number-->
+					<SrcNode>1</SrcNode>       <!-- Source node number - Для каждого КС свое значение (можно привязаться к последнему октету IP-адреса)-->
+					<SrcUnit>0</SrcUnit>              <!-- Source unit number-->					
+
+					<SetTimeStamp>1</SetTimeStamp> <!--Флаг обновления метки времени по изменению данных (если 1 - она меняется по факту получения, если 0 - меняется только при изменении значения)-->
+					<EnableTrace>0</EnableTrace>
+				</Settings>
+				<Rx>
+				<!-- memory - адрес области памяти в устройстве.
+					addr - номер регистра данных на устройстве-->
+					<Sig ref_id="1" memory="130" addr="200"/> 		<!-- Содержимое регистра-->
+					<Sig ref_id="2" memory="130" addr="300.10"/> 	<!-- 10-й бит регистра или строка из 10 символов-->
+				</Rx>
+			</Channel>
+			
+            <Channel id="16" xsi:type="GENERATOR" guid="7b1d71f7-7777-4e94-9737-2a6a7d88b057">
+              <Controller type="NO_BUFFERING"/>			
+              <Settings>
+                  <Client>1</Client>     				
+                  <UpdatePeriod>1000</UpdatePeriod> 	<!-- Период обновления, мс.-->
+                  <SetTimeStamp>1</SetTimeStamp> 		
+              </Settings>
+              <Rx>
+                  <Sig ref_id="1101" gentype="1" value="3.1415"/> 	<!-- генерируем константу 24.1 - тип сигнала float32 (см. Signals-секцию)-->
+                  <Sig ref_id="1102" gentype="2" min="1" max="99"/>	<!-- генерируем случайное значение в диапазоне от 1 до 99 -->
+                  <Sig ref_id="1103" gentype="3" min="-10" max="10" inc="2"/>	<!-- генерируем пилообразную волну в диапазоне по Y от -10 до 10 с инкрементом значения 2 -->
+                  <Sig ref_id="1104" gentype="4" min="0.0" max="3.0" inc="0.1"/>	<!-- генерируем треугольную волну в диапазоне по Y от 0 до 3 с инкрементом значения 0.1 -->
+                  <Sig ref_id="1105" gentype="5" min="-2" max="5" period="10"/>	<!-- генерируем синусоиду в диапазоне по Y от -2 до 5 с периодом 10 сек. -->
+              </Rx>
+          </Channel>
+          
+			<Channel id="17" xsi:type="SNMP" guid="7b1d71f7-7777-4e94-9737-2a545dd8b057">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>1</Client>
+					<Ip>172.17.1.45</Ip>
+					<Version>2</Version>
+					<Community>string</Community>
+					<ContextName>ctx1</ContextName>
+					<MaxObjectsPerRequest>100</MaxObjectsPerRequest>
+					<PollingPeriod>10000</PollingPeriod> <!-- Период опроса, мс.-->
+					<User>user</User>
+					<Password>password</Password>
+					<SecurityLevel>1</SecurityLevel>
+					<AuthProtocol>1</AuthProtocol>
+					<PrivProtocol>2</PrivProtocol>
+					<PrivPassword>pwd</PrivPassword>
+				</Settings>
+				<Rx>
+				<!-- oid - идентификатор в опрашиваемом устройстве. -->
+					<Sig ref_id="122" oid="1.3.6.1.2.1.1.3.0" /> 
+				</Rx>
+			</Channel>  
+			
+			<Channel id="18" xsi:type="S7COMM" guid="7b1d71f7-4312-4e94-9737-2a5a9dd8b057">
+				<Controller type="BUFFERING">
+					<TsQueueSize>1000</TsQueueSize>
+					<TitQueueSize>25</TitQueueSize>
+				</Controller>
+				<Settings>
+					<Client>1</Client>     <!-- Всегда 1, сервер не реализован-->
+					<Ip>172.17.1.45</Ip>
+					<Port>102</Port>
+					<PollingPeriod>10000</PollingPeriod> <!-- Период опроса, мс.-->
+					<Timeout>1</Timeout>
+					<Rack>1</Rack> <!-- Слот процессора-->
+					<Slot>1</Slot> <!-- Слот процессора-->
+					<SetTimeStamp>1</SetTimeStamp> <!--Флаг обновления метки времени по изменению данных (если 1 - она меняется по факту получения, если 0 - меняется только при изменении значения)-->
+					<EnableTrace>0</EnableTrace>
+				</Settings>
+				<Rx>
+				<!-- memory - адрес области памяти в устройстве.
+					block - номер блока 1...N (только для DB, в остальных случаях "0")
+					addr - номер регистра данных на устройстве-->
+					<Sig ref_id="1011" memory="130" addr="200" block="1"/> 		
+					<Sig ref_id="1012" memory="130" addr="300.10" block="1"/> 	
+				</Rx>
+			</Channel>
+
+			<Channel id="19" xsi:type="PROFIBUS_DP" guid="7b1d71f7-4312-4e94-9737-2a5a9dd8b099">
+				<Controller type="NO_BUFFERING" />
+				<Settings>
+					<Client>1</Client>
+					<Address>2</Address>
+					<CommPort>/dev/ttyS0</CommPort>
+					<BaudRate>9600</BaudRate>
+					<PbDebugLevel>0</PbDebugLevel>
+					<Type>dummy_slave</Type>
+					<Slave>
+						<Address>3</Address>
+						<Name>ET200M</Name>
+						<OutputSize>4</OutputSize>
+						<InputSize>4</InputSize>
+						<Gsd>
+							<Identifier>801E</Identifier>
+							<UserPrmData>C0 01 08 09 81 00 00 82 00 00 80 03 15 5f 04 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 15 5f 05 00 10 00 00 00 02 19 19 19 19 19 19 19 19 00 00 00 00</UserPrmData>
+							<Slots>
+								<Slot name="0">
+									<Identifier>04</Identifier>
+									<Params>00 00 ad c4</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="1">
+									<Identifier>04</Identifier>
+									<Params>00 00 0b 41</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="2">
+									<Identifier>04</Identifier>
+									<Params>00 00 8f c0</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="3">
+									<Identifier>43</Identifier>
+									<Params>01 00 1f c2</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="4">
+									<Identifier>43</Identifier>
+									<Params>47 00 15 c5</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+							</Slots>
+							<Diags>
+								<Diag name="16">
+									<Desc>Cold Junction error [help: check Cold Junction error measurement on module or change module]</Desc>
+								</Diag>
+								<Diag name="18">
+									<Desc>Overtemperature [help: reduce temperature and restart module]</Desc>
+								</Diag>
+								<Diag name="20">
+									<Desc>Parametrization error [help: Clear incorrect parameter combination]</Desc>
+								</Diag>
+								<Diag name="21">
+									<Desc>Plant Stop [help: Check and clear reason for external Plant Stop.]</Desc>
+								</Diag>
+								<Diag name="17">
+									<Desc>Hardware error [help: exchange SAIMH module]</Desc>
+								</Diag>
+								<Diag name="19">
+									<Desc>2 wire calibration failed [help: repeat 2 wire calibration]</Desc>
+								</Diag>
+							</Diags>							
+						</Gsd>
+					</Slave>
+				</Settings>
+				<Rx>
+					<Sig ref_id="2000" addr="b2" slave="3" slot="1"/> 		
+				</Rx>
+			</Channel>
+			
+			<Channel id="20" xsi:type="PROFIBUS_DP" guid="8b1d71f7-4312-4e94-9737-2a5a9dd8b099">
+				<Controller type="NO_BUFFERING" />
+				<Settings>
+					<Client>1</Client>
+					<Address>2</Address>
+					<CommPort>/dev/ttyS0</CommPort>
+					<BaudRate>9600</BaudRate>
+					<PbDebugLevel>0</PbDebugLevel>
+					<Type>dummy_slave</Type>
+					<Slave>
+						<Address>5</Address>
+						<Name>ET454A</Name>
+						<OutputSize>4</OutputSize>
+						<InputSize>4</InputSize>
+						<Gsd>
+							<Identifier>802E</Identifier>
+							<UserPrmData>C0 01 08 09 81 00 00 82 00 00 80 03 15 5f 04 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 15 5f 05 00 10 00 00 00 02 19 19 19 19 19 19 19 19 00 00 00 00</UserPrmData>
+							<Slots>
+								<Slot name="0">
+									<Identifier>04</Identifier>
+									<Params>00 00 ad c4</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="1">
+									<Identifier>04</Identifier>
+									<Params>00 00 0b 41</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+								<Slot name="2">
+									<Identifier>04</Identifier>
+									<Params>00 00 8f c0</Params>
+									<DataFormatIn>2</DataFormatIn>
+									<DataLenIn>8</DataLenIn>
+									<DataFormatOut>2</DataFormatOut>
+									<DataLenOut>8</DataLenOut>									
+								</Slot>
+							</Slots>
+							<Diags>
+							</Diags>								
+						</Gsd>
+					</Slave>
+				</Settings>
+				<Rx>
+					<Sig ref_id="2001" addr="b3" slave="5" slot="1"/> 
+				</Rx>
+			</Channel>		
+			
+  	</Channels>
+	</CommunicationServer>
+	
+	<!--настройки пользовательского шлюза, через который осуществляется управление КС-->
+	<ApiGateway>
+		<RpcServer>0.0.0.0:8080</RpcServer> <!-- Соединение принимается через любой доступный сетевой интерфейс -->
+	</ApiGateway>
+	
+	<ServiceLogger> <!--Настройки сервиса логирования. В качестве примера указаны 2 хранилища для ведения логов: syslog и файл CS.log (с механизмом ротации)-->
+		<Logging>
+			<Logger>
+				<Type>syslog</Type> <!--логирование при помощи стандартного Linux-демона syslog, настройки логирования задаются средствами ОС -->
+				<Facility>USER</Facility> <!--параметр для syslog-->
+			</Logger>
+			<Logger>
+				<Type>rotate</Type> <!--логирование в файл с использованием механизма ротации-->
+				<Path>./CS.log</Path>
+				<SizeLimit>1048576</SizeLimit><!--ограничение размера лог-файла. Если оно превышается, ставится метка времени и создается новый лог-файл-->
+				<TimeLimit>86400</TimeLimit><!--ограничение по времени существования лог-файла. Файлы старше заданного времени удаляются при создании очередного файла.-->
+				<Severity>DEBUG</Severity> <!--уровень важности сообщений, которые записываются в лог-файл -->
+			</Logger>
+		</Logging>
+		<Settings>				
+			<Sources> <!--Настройки уровня важности для отдельных источников сообщений (сервисов)-->
+				<Source name="ServiceMonitor">
+                    <Severity>WARNING</Severity>
+				</Source>
+				<Source name="CommServer">
+                   	<Severity>INFO</Severity>
+				</Source>
+				<Source name="ApiGateway">
+                    <Severity>ERROR</Severity>
+				</Source>
+			</Sources>									
+		</Settings>
+	</ServiceLogger>
+	
+	<Archive>
+		<DataBase>
+			<Enabled>0</Enabled>
+			<Path>Path</Path>
+			<TimeLimit>2</TimeLimit>
+			<SizeLimit>10</SizeLimit>
+		</DataBase>
+		<ExternalDataBase>
+			<Enabled>0</Enabled>
+			<DatabaseType>PostgreSQL</DatabaseType>
+			<IpAddr>127.0.0.1</IpAddr>
+			<Port>5432</Port>
+			<DatabaseName>Database</DatabaseName>
+			<Login/>
+			<Password/>
+		</ExternalDataBase>		
+	</Archive>
+
+	<SignalSets/>
+	
+	<Signals>
+	<!--здесь описаны все сигналы, независимо от того, опубликованы ли они или нет, добавленные на все каналы и типы протоколов в текущей конфигурации.
+	id - порядковый номер созданного сигнала внутри проекта
+	type - тип данных сигнала
+	guid - глобальный уникальный идентификатор, опциональное поле, генерируется в проектной базе
+	IEC104_RX_TS#1[SPI - ASDU1, ASDU30] - опциональное описание, некоторое дополнительное описание сигнала, может отсутствовать. Протокол, типы сигнала (на прием или отдачу), тип кадра.
+	-->
+		<Sig id="1" type="BOOLEAN" guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB">IEC104_RX_TS#1[SPI - ASDU1, ASDU30]</Sig>
+		
+		<Sig id="3" type="BITFIELD_2">IEC104_RX_TS#2[DPI - ASDU3, ASDU31]</Sig>
+		<Sig id="5" type="INT16" guid="aaaaaaaa-AAAA-AAAA-AAAA-aaaaaaaaaaaa">IEC104_RX_TIT#1[SVA - ASDU11, ASDU35]</Sig>
+		<Sig id="7" type="FLOAT32">IEC104_RX_TIT#2[R32 - ASDU13, ASDU36]</Sig>
+		<Sig id="9" type="FLOAT32">IEC104_RX_TIT#3[NVA - ASDU9, ASDU34]</Sig>
+		<Sig id="11" type="INT32U">IEC104_RX_TIT#4[BCR - ASDU15, ASDU37]</Sig>
+		<Sig id="13" type="BOOLEAN">IEC104_RX_TS#3[VTI - ASDU5, ASDU32]</Sig>
+		<Sig id="15" type="INT8">IEC104_RX_TIT#5[VTI - ASDU5, ASDU32]</Sig>
+		
+		<Sig id="2" type="BOOLEAN" guid="ffffffff-ffff-ffff-ffff-ffffffffffff">IEC104_TX_TS#1[SPI - ASDU1, ASDU30]</Sig>
+		<Sig id="4" type="BITFIELD_2">IEC104_TX_TS#2[DPIDPI - ASDU3, ASDU31]</Sig>
+		<Sig id="6" type="INT16" guid="aAbBcCdD-eEfF-1234-5678-900000000000">IEC104_TX_TIT#1[SVA - ASDU11, ASDU35]</Sig>
+		<Sig id="8" type="FLOAT32">IEC104_RX_TIT#2[R32 - ASDU13, ASDU36]</Sig>
+		<Sig id="10" type="FLOAT32">IEC104_RX_TIT#3[NVA - ASDU9, ASDU34]</Sig>
+		<Sig id="12" type="INT32U">IEC104_TX_TIT#4[BCR - ASDU15, ASDU37]</Sig>
+		<Sig id="14" type="BOOLEAN">IEC104_TX_TS#3[VTI - ASDU5, ASDU32]</Sig>
+		<Sig id="16" type="INT8">IEC104_TX_TIT#5[VTI - ASDU5, ASDU32]</Sig>
+		
+		<Sig id="17" type="BOOLEAN">MODBUS_TCP_RX_TS#1[FUNC=1]</Sig>
+		<Sig id="19" type="INT16">MODBUS_TCP_RX_TIT#1[FUNC=3]</Sig>
+		<Sig id="21" type="INT16U">MODBUS_TCP_RX_TIT#2[FUNC=3]</Sig>
+		<Sig id="23" type="INT32">MODBUS_TCP_RX_TIT#3[FUNC=3]</Sig>
+		<Sig id="25" type="INT32U">MODBUS_TCP_RX_TIT#4[FUNC=3]</Sig>
+		<Sig id="27" type="FLOAT32">MODBUS_TCP_RX_TIT#5[FUNC=3]</Sig>
+		
+		<Sig id="18" type="BOOLEAN">MODBUS_TCP_TX_TS#1[FUNC=5]</Sig>
+		<Sig id="20" type="INT16">MODBUS_TCP_TX_TIT#1[FUNC=6]</Sig>
+		<Sig id="22" type="INT16U">MODBUS_TCP_TX_TIT#2[FUNC=6]</Sig>
+		<Sig id="24" type="INT32">MODBUS_TCP_TX_TIT#3[FUNC=16]</Sig>
+		<Sig id="26" type="INT32U">MODBUS_TCP_TX_TIT#4[FUNC=16]</Sig>
+		<Sig id="28" type="FLOAT32">MODBUS_TCP_TX_TIT#5[FUNC=16]</Sig>
+		
+		<Sig id="29" type="BOOLEAN">MODBUS_RTU_RX_TS#1[FUNC=1]</Sig>
+		<Sig id="31" type="INT16">MODBUS_RTU_RX_TIT#1[FUNC=3]</Sig>
+		<Sig id="33" type="INT16U">MODBUS_RTU_RX_TIT#2[FUNC=3]</Sig>
+		<Sig id="35" type="INT32">MODBUS_RTU_RX_TIT#3[FUNC=3]</Sig>
+		<Sig id="37" type="INT32U">MODBUS_RTU_RX_TIT#4[FUNC=3]</Sig>
+		<Sig id="39" type="FLOAT32">MODBUS_RTU_RX_TIT#5[FUNC=3]</Sig>
+		
+		<Sig id="30" type="BOOLEAN">MODBUS_RTU_TX_TS#1[FUNC=5]</Sig>
+		<Sig id="32" type="INT16">MODBUS_RTU_TX_TIT#1[FUNC=6]</Sig>
+		<Sig id="34" type="INT16U">MODBUS_RTU_TX_TIT#2[FUNC=6]</Sig>
+		<Sig id="36" type="INT32">MODBUS_RTU_TX_TIT#3[FUNC=16]</Sig>
+		<Sig id="38" type="INT32U">MODBUS_RTU_TX_TIT#4[FUNC=16]</Sig>
+		<Sig id="40" type="FLOAT32">MODBUS_RTU_TX_TIT#5[FUNC=16]</Sig>
+		
+		<Sig id="41" type="BOOLEAN">OPC_UA_RX_TS#1</Sig>
+		<Sig id="43" type="INT16">OPC_UA_RX_TIT#1</Sig>
+		<Sig id="45" type="INT32">OPC_UA_RX_TIT#2</Sig>
+		<Sig id="47" type="INT64">OPC_UA_RX_TIT#3</Sig>
+		<Sig id="49" type="FLOAT32">OPC_UA_RX_TIT#4</Sig>
+		<Sig id="51" type="FLOAT64">OPC_UA_RX_TIT#5</Sig>
+		
+		<Sig id="42" type="BOOLEAN">OPC_UA_TX_TS#1</Sig>
+		<Sig id="44" type="INT16">OPC_UA_TX_TIT#1</Sig>
+		<Sig id="46" type="INT32">OPC_UA_TX_TIT#2</Sig>
+		<Sig id="48" type="INT64">OPC_UA_TX_TIT#3</Sig>
+		<Sig id="50" type="FLOAT32">OPC_UA_TX_TIT#4</Sig>
+		<Sig id="52" type="FLOAT64">OPC_UA_TX_TIT#5</Sig>
+		
+		<Sig id="53" type="BOOLEAN">IEC61850_RX_TS#1[POLLING]</Sig>
+		<Sig id="55" type="FLOAT32">IEC61850_RX_TIT#1[POLLING]</Sig>
+		<Sig id="57" type="BOOLEAN">IEC61850_RX_TS#2[REPORT]</Sig>
+		<Sig id="59" type="BOOLEAN">IEC61850_RX_TS#3[REPORT]</Sig>
+		<Sig id="61" type="BOOLEAN">IEC61850_RX_TS#4[REPORT]</Sig>
+		<Sig id="63" type="FLOAT32">IEC61850_RX_TIT#2[REPORT]</Sig>
+		<Sig id="65" type="FLOAT32">IEC61850_RX_TIT#3[REPORT]</Sig>
+		<Sig id="67" type="FLOAT32">IEC61850_RX_TIT#4[REPORT]</Sig>
+		
+		<Sig id="54" type="BOOLEAN">IEC104_TX_TS#4[SPI - ASDU1, ASDU30]</Sig>
+		<Sig id="56" type="FLOAT32">IEC104_TX_TIT#6[R32 - ASDU13, ASDU36]</Sig>
+		<Sig id="58" type="BOOLEAN">IEC104_TX_TS#5[SPI - ASDU1, ASDU30]</Sig>
+		<Sig id="60" type="BOOLEAN">IEC104_TX_TS#6[SPI - ASDU1, ASDU30]</Sig>
+		<Sig id="62" type="BOOLEAN">IEC104_TX_TS#7[SPI - ASDU1, ASDU30]</Sig>
+		<Sig id="64" type="FLOAT32">IEC104_TX_TIT#7[R32 - ASDU13, ASDU36]</Sig>
+		<Sig id="66" type="FLOAT32">IEC104_RX_TIT#8[R32 - ASDU13, ASDU36]</Sig>
+		<Sig id="68" type="FLOAT32">IEC104_RX_TIT#9[R32 - ASDU13, ASDU36]</Sig>
+
+		<Sig id="69" type="VISIBLE_STRING_255">MODBUS_TCP_RX_STRING#1</Sig>
+		<Sig id="71" type="VISIBLE_STRING_255">MODBUS_TCP_RX_STRING#2</Sig>
+		
+		<Sig id="70" type="BOOLEAN">MQTT_TX_TS#1[BOOLEAN]</Sig>
+		<Sig id="72" type="FLOAT32">MQTT_TX_TIT#1</Sig>
+		<Sig id="74" type="INT32">MQTT_TX_TIT#2</Sig>
+
+		<Sig id="80" type="BOOLEAN">DIAG_RX_CH#1[BOOLEAN]</Sig>
+		<Sig id="81" type="BOOLEAN">DIAG_RX_CH#2[BOOLEAN]</Sig>
+		<Sig id="82" type="BOOLEAN">DIAG_RX_CH#3[BOOLEAN]</Sig>
+		<Sig id="83" type="BOOLEAN">DIAG_RX_CH#4[BOOLEAN]</Sig>
+		<Sig id="84" type="BOOLEAN">DIAG_RX_CH#5[BOOLEAN]</Sig>
+		<Sig id="85" type="BOOLEAN">DIAG_RX_CH#6[BOOLEAN]</Sig>
+		<Sig id="86" type="BOOLEAN">DIAG_RX_CH#7[BOOLEAN]</Sig>
+		<Sig id="87" type="BOOLEAN">DIAG_RX_CH#8[BOOLEAN]</Sig>
+		<Sig id="88" type="BOOLEAN">DIAG_RX_CH#9[BOOLEAN]</Sig>
+		<Sig id="89" type="BOOLEAN">DIAG_RX_CH#10[BOOLEAN]</Sig>
+		<Sig id="90" type="BOOLEAN">DIAG_RX_CH#11[BOOLEAN]</Sig>
+		<Sig id="91" type="BOOLEAN">DIAG_RX_CH#12[BOOLEAN]</Sig>
+		<Sig id="92" type="BOOLEAN">DIAG_RX_CH#13[BOOLEAN]</Sig>
+		
+		<Sig id="1001" type="BOOLEAN">IEC104_CHANNEL#1_CONNECT</Sig>
+		
+  		<Sig id="1101" guid="6ab93704-fcf0-4c75-9b24-ffa1c96e8c10" type="FLOAT32">Коммуникационный Cервер/Генерация/GEN_1_CONST</Sig>
+  		<Sig id="1102" guid="6ab93704-fcf0-4c75-9b24-ffb1c96e8c11" type="INT32U">Коммуникационный Cервер/Генерация/GEN_2_RANDOM</Sig>
+  		<Sig id="1103" guid="6ab93704-fcf0-4c75-9b24-fff1c96e8c12" type="INT16">Коммуникационный Cервер/Генерация/GEN_3_SAW</Sig>
+  		<Sig id="1104" guid="6ab93704-fcf0-4c75-9b24-ffc1c96e8c13" type="FLOAT32">Коммуникационный Cервер/Генерация/GEN_4_TRIANGLE</Sig>
+  		<Sig id="1105" guid="6ab93704-fcf0-4c75-9b24-ffe1c96e8c19" type="FLOAT32">Коммуникационный Cервер/Генерация/GEN_5_SINUS</Sig> 
+  		
+  		<Sig id="122" type="INT32">SNMP_SIGNAL#1</Sig>
+  		
+		<Sig id="1011" type="BOOLEAN" guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB">S7_SIGNAL#1</Sig>
+		<Sig id="1012" type="BOOLEAN" guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB">S7_SIGNAL#2</Sig>
+		
+  		<Sig id="2006" type="INT32">OPCUA_SUB1_SIGNAL#1</Sig>
+  		<Sig id="2007" type="INT32">OPCUA_SUB2_SIGNAL#1</Sig>
+
+		<Sig id="2000" type="BOOLEAN">PROFIBUS_DP_SIGNAL#1</Sig>
+		<Sig id="2001" type="BOOLEAN">PROFIBUS_DP_SIGNAL#2</Sig>
+		
+	</Signals>
+
+	<Commands>
+	<!--Здесь записаны все команды, добавленные на КС во всех протоколах, независимо от того, опубликованы они или нет.
+         id - порядковый номер строки с командой в рабочей области конфигуратора
+		 guid - необязательный уникальный идентификатор
+		 type - тип данных, с которым команда работает
+		 service - сценарий исполнения команды. 
+			Select - команда с предварительным выбором (сначала выполняется сценарий выбора, получается подтверждение выбора. И затем идёт исполнение команды). 
+			Operate - команда прямого исполнения
+			Any - выполняется любой сценарий, как с предварительном выбором, так и без него.
+		CMD#2[IEC104->IEC104, DCO - ASDU46] - опциональное необязательное описание команды (протокол, тип кадра)-->
+		<Cmd id="1" type="BOOLEAN" service="SELECT" guid="a1b2c3d4-f5f6-a7a8-b9b0-ffFFaaAAccBB">CMD#1[IEC104->IEC104, SCO - ASDU45]</Cmd>
+		<Cmd id="2" type="BITFIELD_2" service="OPERATE">CMD#2[IEC104->IEC104, DCO - ASDU46]</Cmd>
+		<Cmd id="3" type="BITFIELD_2" service="ANY">CMD#3[IEC104->IEC104, RCO - ASDU47]</Cmd>
+		<Cmd id="4" type="FLOAT32" service="SELECT">CMD#4[IEC104->IEC104, SPNCO - ASDU48]</Cmd>
+		<Cmd id="5" type="INT16" service="ANY">CMD#5[IEC104->IEC104, SPCO - ASDU49]</Cmd>
+		<Cmd id="6" type="FLOAT32" service="OPERATE" guid="12345678-1234-1234-1234-123456789011">CMD#6[IEC104->IEC104, SPSCO - ASDU50]</Cmd>
+
+		<Cmd id="7" type="BOOLEAN" service="SELECT">CMD#7[IEC104->MODBUS TCP, ASDU45->FUNC5]</Cmd>
+		<Cmd id="8" type="BITFIELD_2" service="OPERATE">CMD#8[IEC104->MODBUS TCP, ASDU46->FUNC6]</Cmd>
+		<Cmd id="9" type="BITFIELD_2" service="ANY">CMD#9[IEC104->MODBUS TCP, ASDU47->FUNC6]</Cmd>
+		<Cmd id="10" type="FLOAT32" service="SELECT">CMD#10[IEC104->MODBUS TCP, ASDU48->FUNC16]</Cmd>
+		<Cmd id="11" type="INT16" service="ANY">CMD#11[IEC104->MODBUS TCP, ASDU49->FUNC6]</Cmd>
+		<Cmd id="12" type="FLOAT32" service="OPERATE">CMD#12[IEC104->MODBUS TCP, ASDU50->FUNC16]</Cmd>
+
+		<Cmd id="13" type="BOOLEAN" service="SELECT">CMD#13[IEC104->MODBUS RTU, ASDU45->FUNC5]</Cmd>
+		<Cmd id="14" type="BITFIELD_2" service="OPERATE">CMD#14[IEC104->MODBUS RTU, ASDU46->FUNC6]</Cmd>
+		<Cmd id="15" type="BITFIELD_2" service="ANY">CMD#15[IEC104->MODBUS RTU, ASDU47->FUNC6]</Cmd>
+		<Cmd id="16" type="FLOAT32" service="SELECT">CMD#16[IEC104->MODBUS RTU, ASDU48->FUNC16]</Cmd>
+		<Cmd id="17" type="INT16" service="ANY">CMD#17[IEC104->MODBUS RTU, ASDU49->FUNC6]</Cmd>
+		<Cmd id="18" type="FLOAT32" service="OPERATE">CMD#18[IEC104->MODBUS RTU, ASDU50->FUNC16]</Cmd>
+		
+		<Cmd id="19" type="BOOLEAN" service="ANY">CMD#19[IEC104->OPC UA, ASDU45->BOOL]</Cmd>
+		<Cmd id="20" type="BOOLEAN" service="ANY">CMD#20[IEC104->OPC UA, ASDU45->EXTENSION_OBJECT]</Cmd>
+		
+		<Cmd id="21" type="BOOLEAN" service="OPERATE">CMD#21[IEC104->IEC61850, ASDU45->Oper$ctlVal]</Cmd>
+		<Cmd id="22" type="BITFIELD_2" service="OPERATE">CMD#22[IEC104->IEC61850, ASDU46->Oper$ctlVal]</Cmd>
+	</Commands>
+</Configuration>
